@@ -86,7 +86,7 @@ The helpers include the client credentials of the following popular email client
 
 - Thunderbird
 - GNOME Evolution
-- GNOME Online Accounts (only available for Gmail)
+- GNOME Online Accounts (only available for Gmail and Outlook)
 
 In order to set the client credentials of your choice, run (taking `git credential-gmail` as an example):
 
