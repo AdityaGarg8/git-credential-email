@@ -443,12 +443,21 @@ else:
 				pass
 
 	if "-i" in sys.argv:
+		import re
 		message = sys.stdin.read()
 		if "\r\n" not in message:
 			message = message.replace("\n", "\r\n")
+		match = re.search(r'^From:\s*([^\r\n]+)', message, re.MULTILINE | re.IGNORECASE)
+		from_address = match.group(1).strip()
+		match = re.match(r'^(.*?)\s*<([^>]+)>$', from_address)
+		if match:
+			from_address = match.group(2).strip()
+		elif from_address.startswith('<') and from_address.endswith('>'):
+			from_address = from_address[1:-1]
+
 		message_bytes = message.encode("utf-8")
 		encoded_string = base64.b64encode(message_bytes).decode("utf-8")
-		email_url = "https://graph.microsoft.com/v1.0/users/gargaditya08@live.com/sendMail"
+		email_url = f"https://graph.microsoft.com/v1.0/users/{from_address}/sendMail"
 		email_headers = {
 			"Authorization": f"Bearer {access_token}",
 			"Content-Type": "text/plain"
