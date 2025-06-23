@@ -19,13 +19,13 @@ import sys
 
 if "--help" in sys.argv:
 	print("""
-Usage: git-credential-outlook [OPTIONS]
+Usage: git-msgraph [OPTIONS]
 
 Options:
   --help                 * Show this help message and exit.
   --set-client           * Set the client details to use for authentication.
   --delete-client        * Delete the client details set using --set-client.
-  --authenticate         * Authenticate with Outlook using OAuth2.
+  --authenticate         * Authenticate with Microsoft Graph API using OAuth2.
       --device           * Use device code flow for authentication.
                            Use this option with --authenticate.
       --external-auth    * Authenticate using an external browser.
@@ -38,21 +38,23 @@ Options:
   --delete-token         * Delete the credentials saved using --authenticate.
 
 Description:
-  This script allows you to authenticate with Outlook using OAuth2 and
-  retrieve access tokens for use with IMAP, POP, and SMTP protocols.
+  This script allows you to authenticate with Microsoft Graph API using
+  OAuth2 and retrieve access tokens to send emails using the API.
 
 Examples:
   Authenticate using the browser-based flow:
-    git-credential-outlook --authenticate
+    git-msgraph --authenticate
 
   Authenticate using the device code flow:
-    git-credential-outlook --authenticate --device
+    git-msgraph --authenticate --device
 """)
 	sys.exit(0)
 
+import base64
 import json
 import keyring
 import os
+import requests
 import time
 import urllib.parse
 import urllib.request
@@ -69,8 +71,8 @@ Redirect_URI_Evolution = "https://login.microsoftonline.com/common/oauth2/native
 ClientId_Gnome = "8ef61e06-9fd5-49af-9b63-6983aede4213"
 Redirect_URI_Gnome = "goa-oauth2://localhost"
 
-Scopes = 'https://outlook.office.com/POP.AccessAsUser.All https://outlook.office.com/IMAP.AccessAsUser.All https://outlook.office.com/SMTP.Send offline_access openid profile'
-ServiceName = "git-credential-outlook"
+Scopes = 'Mail.Send offline_access openid profile'
+ServiceName = "git-msgraph"
 
 def save_refresh_token(refresh_token):
 	keyring.set_password(ServiceName, "refresh_token", refresh_token)
@@ -94,12 +96,6 @@ def load_access_token_expiry():
 def delete_access_token():
 	keyring.delete_password(ServiceName, "access_token")
 	keyring.delete_password(ServiceName, "access_token_expiry")
-
-def print_access_token(access_token):
-	if "get" in sys.argv:
-		print(f"password={access_token}")
-	else:
-		print(access_token)
 
 def set_client(client_id, redirect_uri):
 	keyring.set_password(ServiceName, "client_id", client_id)
@@ -186,10 +182,10 @@ def RefreshToken(refresh_token):
 	except urllib.error.HTTPError as e:
 		print(f"HTTP Error {e.code}: {e.reason}")
 		print("Response Body:", e.read().decode())
-		sys.exit("\nFailed to get access token due to an HTTP error.\nTry running `git credential-outlook --authenticate` to get a new refresh token.")
+		sys.exit("\nFailed to get access token due to an HTTP error.\nTry running `git msgraph --authenticate` to get a new refresh token.")
 	except Exception as e:
 		print(f"Unexpected error: {e}")
-		sys.exit("\nFailed to get access token due to an unexpected error.\nTry running `git credential-outlook --authenticate` to get a new refresh token.")
+		sys.exit("\nFailed to get access token due to an unexpected error.\nTry running `git msgraph --authenticate` to get a new refresh token.")
 
 def DeviceFlowCode():
 	params = {}
@@ -431,7 +427,7 @@ else:
 		refresh_token = load_refresh_token()
 
 		if refresh_token is None:
-			sys.exit("No refresh token found.\nPlease authenticate first by running `git credential-outlook --authenticate`")
+			sys.exit("No refresh token found.\nPlease authenticate first by running `git msgraph --authenticate`")
 
 		token = RefreshToken(refresh_token)
 
@@ -446,5 +442,25 @@ else:
 			except Exception:
 				pass
 
-	print_access_token(access_token)
+	if "-i" in sys.argv:
+		message = sys.stdin.read()
+		if "\r\n" not in message:
+			message = message.replace("\n", "\r\n")
+		message_bytes = message.encode("utf-8")
+		encoded_string = base64.b64encode(message_bytes).decode("utf-8")
+		email_url = "https://graph.microsoft.com/v1.0/users/gargaditya08@live.com/sendMail"
+		email_headers = {
+			"Authorization": f"Bearer {access_token}",
+			"Content-Type": "text/plain"
+		}
+
+		email_response = requests.post(email_url, headers=email_headers, data=encoded_string)
+
+		if email_response.status_code == 202:
+			print("Email sent successfully.")
+		else:
+			sys.exit(f"Failed to send email: {email_response.status_code}, {email_response.text}")
+
+	else:
+		print(access_token)
 
