@@ -30,10 +30,6 @@ Options:
                            Use this option with --authenticate.
       --external-auth    * Authenticate using an external browser.
                            Use this option with --authenticate.
-      --use-pyqt6        * Use PyQt6-WebEngine for the authentication flow,
-                           instead of installed web browsers. Ignored if
-                           PyQt6-WebEngine is not installed, or Windows binary
-                           is used.
   --force-refresh-token  * Force refresh the access token.
   --delete-token         * Delete the credentials saved using --authenticate.
 
@@ -316,19 +312,13 @@ elif "--authenticate" in sys.argv:
 
 		else:
 			print("Opening a browser window for authentication...\n")
-			if "--use-pyqt6" in sys.argv:
-				if Redirect_URI_is_http == 'true':
-					try:
-						from PyQt6.QtWidgets import QApplication, QMainWindow
-						from PyQt6.QtWebEngineWidgets import QWebEngineView
-						from PyQt6.QtCore import QUrl, QLoggingCategory
-						qt_available = True
-					except Exception:
-						print("Warning! PyQt6-WebEngine was not found. Falling back to system browser.\n")
-						import webbrowser
-						qt_available = False
-				else:
-					print("Warning! this client uses a non-http redirect URI. --use-pyqt6 is not supported for non-http redirect URIs. Falling back to system browser.\n")
+			if Redirect_URI_is_http == 'true':
+				try:
+					from PyQt6.QtWidgets import QApplication, QMainWindow
+					from PyQt6.QtWebEngineWidgets import QWebEngineView
+					from PyQt6.QtCore import QUrl, QLoggingCategory
+					qt_available = True
+				except Exception:
 					import webbrowser
 					qt_available = False
 			else:
