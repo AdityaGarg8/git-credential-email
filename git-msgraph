@@ -312,7 +312,7 @@ elif "--authenticate" in sys.argv:
 
 		else:
 			print("Opening a browser window for authentication...\n")
-			if Redirect_URI_is_http == 'true':
+			if Redirect_URI_is_http == 'true': # NEED HELP: How to intercept non http urls in PyQt6?
 				try:
 					from PyQt6.QtWidgets import QApplication, QMainWindow
 					from PyQt6.QtWebEngineWidgets import QWebEngineView
