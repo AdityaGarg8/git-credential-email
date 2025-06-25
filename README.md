@@ -221,6 +221,7 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
         smtpUser = someone@gmail.com # Replace this with your email address
         smtpServerPort = 587
         smtpAuth = OAUTHBEARER
+        from = Your Name <someone@gmail.com> # Replace this with your name and email address
   ```
 
 ### Outlook
@@ -236,6 +237,7 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
         smtpUser = someone@outlook.com # Replace this with your email address
         smtpServerPort = 587
         smtpAuth = XOAUTH2
+        from = Your Name <someone@outlook.com> # Replace this with your name and email address
   ```
 
 #### Using Microsoft Graph API
@@ -257,6 +259,7 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
         smtpUser = someone@yahoo.com # Replace this with your email address
         smtpServerPort = 587
         smtpAuth = OAUTHBEARER
+        from = Your Name <someone@yahoo.com> # Replace this with your name and email address
   ```
 
 ### AOL
@@ -270,6 +273,7 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
         smtpUser = someone@aol.com # Replace this with your email address
         smtpServerPort = 587
         smtpAuth = OAUTHBEARER
+        from = Your Name <someone@aol.com> # Replace this with your name and email address
   ```
 
   **Note: Make sure you have atleast version 2.1800 of perl's [Authen::SASL](https://metacpan.org/dist/Authen-SASL) library in order to be able to use XOAUTH2 and OAUTHBEARER. You can run `cpan install Authen::SASL` to install the latest version of this library.**
