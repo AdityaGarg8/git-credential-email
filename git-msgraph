@@ -459,6 +459,12 @@ else:
 		to = [addr for name, addr in getaddresses(raw_message.get_all('To', []))]
 		cc = [addr for name, addr in getaddresses(raw_message.get_all('Cc', []))]
 		bcc = [r for r in recipients if r not in to and r not in cc]
+		from_address = raw_message.get('From', '')
+		match = re.match(r'^(.*?)\s*<([^>]+)>$', from_address)
+		if match:
+			from_address = match.group(2).strip()
+		elif from_address.startswith('<') and from_address.endswith('>'):
+			from_address = from_address[1:-1]
 
 		# Add Bcc header if there are Bcc addresses
 		if bcc:
@@ -466,13 +472,6 @@ else:
 
 		message = raw_message.as_string()
 		message = message.replace("\n", "\r\n")
-		match = re.search(r'^From:\s*([^\r\n]+)', message, re.MULTILINE | re.IGNORECASE)
-		from_address = match.group(1).strip()
-		match = re.match(r'^(.*?)\s*<([^>]+)>$', from_address)
-		if match:
-			from_address = match.group(2).strip()
-		elif from_address.startswith('<') and from_address.endswith('>'):
-			from_address = from_address[1:-1]
 
 		message_bytes = message.encode("utf-8")
 		encoded_string = base64.b64encode(message_bytes).decode("utf-8")
