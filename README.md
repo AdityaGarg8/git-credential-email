@@ -150,7 +150,7 @@ Microsoft Outlook accounts can send emails using two methods. First is their SMT
 
 #### Using Microsoft Graph API
 
-Microsoft Graph API can be used instead of Outlook's SMTP server to send emails. Microsoft Graph API tends to be faster than SMTP. One disadvantage of using this is that unlike SMTP, it does not support Bcc addresses, and such addresses will be rejected. If you want to use Microsoft Graph API to send emails, follow these instructions.
+Microsoft Graph API can be used instead of Outlook's SMTP server to send emails. Microsoft Graph API tends to be faster than SMTP. If you want to use Microsoft Graph API to send emails, follow these instructions.
 
 - Similar to SMTP helper, we need to get a refresh token for Microsoft Graph API as well. For that run:
 
