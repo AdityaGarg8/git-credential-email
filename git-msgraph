@@ -443,10 +443,29 @@ else:
 				pass
 
 	if "-i" in sys.argv:
+		import argparse
 		import re
-		message = sys.stdin.read()
-		if "\r\n" not in message:
-			message = message.replace("\n", "\r\n")
+		from email import message_from_file
+		from email.utils import getaddresses
+
+		parser = argparse.ArgumentParser()
+		parser.add_argument('-i', nargs='+', help='Recipient email addresses')
+		args, unknown = parser.parse_known_args()
+		recipients = args.i if args.i else []
+
+		raw_message = message_from_file(sys.stdin)
+
+		# Find Bcc addresses
+		to = [addr for name, addr in getaddresses(raw_message.get_all('To', []))]
+		cc = [addr for name, addr in getaddresses(raw_message.get_all('Cc', []))]
+		bcc = [r for r in recipients if r not in to and r not in cc]
+
+		# Add Bcc header if there are Bcc addresses
+		if bcc:
+			raw_message['Bcc'] = ', '.join(bcc)
+
+		message = raw_message.as_string()
+		message = message.replace("\n", "\r\n")
 		match = re.search(r'^From:\s*([^\r\n]+)', message, re.MULTILINE | re.IGNORECASE)
 		from_address = match.group(1).strip()
 		match = re.match(r'^(.*?)\s*<([^>]+)>$', from_address)
