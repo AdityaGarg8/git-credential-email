@@ -87,7 +87,7 @@ If not configured, it will use Thunderbird's `client_id` and `client_secret` by 
 The helpers include the client credentials of the following popular email clients:
 
 - Thunderbird
-- GNOME Evolution
+- GNOME Evolution (only available for Gmail, Outlook and Yahoo)
 - GNOME Online Accounts (only available for Gmail and Outlook)
 
 In order to set the client credentials of your choice, run (taking `git credential-gmail` as an example):
