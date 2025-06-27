@@ -153,7 +153,7 @@ elif "-i" in sys.argv:
 	except Exception as e:
 		print(f"Failed to send message due to \"{e}\".")
 		print("Make sure your \"From:\" address is valid and you have authenticated successfully.")
-		sys.exit("Try authenticating again by running `git protonmail --authenticate` if your session has expired.")
+		sys.exit("Try authenticating again by running `git protonmail --authenticate` if your session has expired or refresh token is invalid.")
 
 elif "--delete-session" in sys.argv:
 	exit_error = 0
