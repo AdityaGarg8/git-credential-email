@@ -327,7 +327,7 @@ class Message:
 	type: str = ''
 	external_id: str = ''
 	in_reply_to: str = ''
-	plain_transfer_encoding: str = field(default='quoted-printable')
+	plain_transfer_encoding: str = field(default='8bit')
 	extra: dict = field(default_factory=dict)
 
 	def __str__(self):
@@ -1278,15 +1278,15 @@ class ProtonMail:
 		data = message.body
 		msg_plain = MIMEText('', _subtype='plain')
 
-		if message.plain_transfer_encoding == '8bit':
-			msg_plain.replace_header('Content-Transfer-Encoding', '8bit')
-		elif message.plain_transfer_encoding == 'base64':
+		if message.plain_transfer_encoding == 'base64':
 			msg_plain.replace_header('Content-Transfer-Encoding', 'base64')
 			data = b64encode(data.encode()).decode()
 			data = '\n'.join([data[i:i + 76] for i in range(0, len(data), 76)])
-		else: # default is 'quoted-printable'
+		elif message.plain_transfer_encoding == 'quoted-printable':
 			msg_plain.replace_header('Content-Transfer-Encoding', 'quoted-printable')
 			data = quopri.encodestring(data.encode('utf-8')).decode('utf-8')
+		else: # default is '8bit'
+			msg_plain.replace_header('Content-Transfer-Encoding', '8bit')
 
 		msg_plain.set_payload(data, 'utf-8')
 		return msg_plain.as_string().replace('MIME-Version: 1.0\n', '')
