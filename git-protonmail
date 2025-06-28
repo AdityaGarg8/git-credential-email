@@ -17,19 +17,1600 @@
 
 import argparse
 import base64
+import bcrypt
 import getpass
+import hashlib
+import json
 import keyring
 import os
+import pickle
+import quopri
+import random
 import re
 import secrets
+import string
 import sys
+import unicodedata
+import warnings
 
+warnings.filterwarnings("ignore", module="pgpy")  # ignore deprecation warnings for pgpy
+
+from base64 import b64decode, b64encode
+from dataclasses import asdict, dataclass, field
+from copy import deepcopy
+from cryptography.hazmat.backends import default_backend
 from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from datetime import datetime
 from email import message_from_file
+from email.mime.text import MIMEText
+from email.parser import Parser
 from email.utils import getaddresses
-from protonmail import ProtonMail
-from protonmail.models import CaptchaConfig
+from enum import Enum
+from pgpy import PGPMessage, PGPKey
+from requests import Session
+from requests.models import Response
+from requests_toolbelt import MultipartEncoder
+from typing import Callable, Optional, Union
+from typing_extensions import Self
 
+"""Constants
+https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/constants.py
+"""
+PM_APP_VERSION_ACCOUNT = 'web-account@5.0.255.0'
+PM_APP_VERSION_MAIL = 'web-mail@5.0.66.5'
+PM_APP_VERSION_DEV = 'Other'
+API_VERSION = '4'
+SRP_LEN_BYTES = 256
+SALT_LEN_BYTES = 10
+
+DEFAULT_HEADERS = {
+	'authority': 'account.proton.me',
+	'accept': 'application/vnd.protonmail.v1+json',
+	'accept-language': 'en-US,en;q=0.5',
+	'content-type': 'application/json',
+	'origin': 'https://account.proton.me',
+	'referer': 'https://account.proton.me/mail',
+	'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+	'x-pm-appversion': PM_APP_VERSION_ACCOUNT,
+	'x-pm-apiversion': API_VERSION,
+	'x-pm-locale': 'en_US',
+}
+
+urls_api = {
+	'api': 'https://api.protonmail.ch/api',
+	'mail': 'https://mail.proton.me/api',
+	'account': 'https://account.proton.me/api',
+	'account-api': 'https://account-api.proton.me',
+	'assets': 'https://account.proton.me/assets'
+}
+
+colors = {
+	"green": "\x1b[32m",
+	"red": "\x1b[31m",
+	"yellow": "\033[93m",
+	"bold": "\x1b[1m",
+	"reset": "\x1b[0m",
+}
+
+"""Exceptions
+https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/exceptions.py
+"""
+
+class SendMessageError(Exception):
+	"""Error when trying to send message"""
+
+
+class InvalidTwoFactorCode(Exception):
+	"""Invalid Two-Factor Authentication (2FA) code"""
+
+
+class NoKeysForDecryptThisMessage(Exception):
+	"""
+	No keys to decrypt this message
+	If you created a new key then you need to re-login
+	If you deleted the key then you can't decrypt this message
+	"""
+
+class LoadSessionError(Exception):
+	"""Error while loading session, maybe this session file was created in other version? Try re-login."""
+
+
+class AddressNotFound(Exception):
+	"""Email address was not found"""
+
+class CantSolveImageCaptcha(Exception):
+	"""Error when trying to solve image CAPTCHA, maybe this image hard, just retry login"""
+
+
+class InvalidCaptcha(Exception):
+	"""CAPTCHA solved, but something got wrong"""
+
+"""Logger
+https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/logger.py
+"""
+class Logger:
+	"""
+	DEBUG = 1
+	INFO = 2
+	WARNING = 3
+	ERROR = 4
+	"""
+	def __init__(self, level, func):
+		self.level = level
+		self.func = func
+		self.do_color = func is print
+
+	def debug(self, status: str) -> None:
+		"""Debug."""
+		if self.level < 1:
+			return
+		self.func(status)
+
+	def info(self, status: str, color: str = 'reset') -> None:
+		"""Info."""
+		if self.level < 2:
+			return
+		if self.do_color:
+			status = f"{colors[color]}{status}{colors['reset']}"
+		self.func(status)
+
+	def warning(self, status: str, color: str = 'yellow') -> None:
+		"""Warning."""
+		if self.level < 3:
+			return
+		if self.do_color:
+			status = f"{colors[color]}{status}{colors['reset']}"
+		self.func(status)
+
+	def error(self, status: str, color: str = 'red') -> None:
+		"""Error."""
+		if self.level < 4:
+			return
+		if self.do_color:
+			status = f"{colors[color]}{status}{colors['reset']}"
+		self.func(status)
+
+"""Dataclasses
+https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/models.py
+"""
+class LoginType(Enum):
+	"""
+	Login type
+
+	Attributes:
+		WEB: Harder auth, more requests, CAPTCHA like in web
+		DEV: Simpler auth, fewer requests, maybe more often CAPTCHA
+	"""
+	WEB = 'web'
+	DEV = 'dev'
+
+
+def default_function_for_manual_solve_captcha(auth_data: dict) -> str:
+	"""Default function to manual solve CAPTCHA"""
+	print("Open the URL below on a web browser in incognito mode:")
+	print(f"URL: {auth_data['Details']['WebUrl']}\n")
+	print("Follow the instructions on https://github.com/opulentfox-29/protonmail-api-client/blob/master/README.md#captcha to get token.")
+	token_from_init = input('Enter the token: ')
+	return token_from_init
+
+def get_token_from_url(url):
+	import urllib.parse
+	parsed_url = urllib.parse.urlparse(url)
+	parsed_query = urllib.parse.parse_qs(parsed_url.query)
+	return parsed_query.get('token', [''])[0]
+
+def default_function_for_pyqt_solve_captcha(auth_data: dict) -> str:
+	"""Default function to solve CAPTCHA using PyQt web browser"""
+
+	import os
+	import sys
+	from PyQt6.QtWidgets import QApplication, QMainWindow
+	from PyQt6.QtWebEngineWidgets import QWebEngineView
+	from PyQt6.QtWebEngineCore import QWebEngineUrlRequestInterceptor, QWebEngineProfile, QWebEnginePage
+	from PyQt6.QtCore import QUrl, QLoggingCategory
+
+	QLoggingCategory("qt.webenginecontext").setFilterRules("*.info=false")
+	os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = f"--enable-logging --log-level=3"
+
+	url = auth_data['Details']['WebUrl']
+
+	class QuietWebEnginePage(QWebEnginePage):
+		#js messages spam the console for no reason
+		def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
+			return
+
+	class RequestInterceptor(QWebEngineUrlRequestInterceptor):
+		def __init__(self):
+			super().__init__()
+			self.token = ''
+		def interceptRequest(self, info):
+			url_str = info.requestUrl().toString()
+			if "verify-api.proton.me/captcha/v1/api/bg" in url_str:
+				# This URL has the token we need
+				self.token = get_token_from_url(url_str)
+			if "verify-api.proton.me/captcha/v1/api/finalize" in url_str:
+				# This URL is when the CAPTCHA is solved, we can quit the app
+				QApplication.instance().quit()
+
+	class BrowserWindow(QMainWindow):
+		def __init__(self):
+			super().__init__()
+			self.setWindowTitle("OAuth2 Login")
+			self.resize(800, 600)
+			self.browser = QWebEngineView()
+			self.browser.setPage(QuietWebEnginePage(self.browser))
+			self.setCentralWidget(self.browser)
+			self.browser.load(QUrl(url))
+			self.show()
+
+	webapp = QApplication(sys.argv)
+	interceptor = RequestInterceptor()
+	QWebEngineProfile.defaultProfile().setUrlRequestInterceptor(interceptor)
+	window = BrowserWindow()
+	webapp.exec()
+
+	return interceptor.token
+
+@dataclass
+class CaptchaConfig:
+	"""Config to solve CAPTCHA"""
+	class CaptchaType(Enum):
+		"""
+		CAPTCHA solve type
+
+		Attributes:
+			AUTO: Attempt fully automatic CAPTCHA solution. It does not guarantee the result, sometimes it is necessary to run several times.
+			MANUAL: Manual CAPTCHA solution. Requires additional actions from you, read more: https://github.com/opulentfox-29/protonmail-api-client?tab=readme-ov-file#solve-captcha
+			PYQT: Use PyQt6 web browser to solve CAPTCHA.
+		"""
+		AUTO = 'auto'
+		MANUAL = 'manual'
+		PYQT = 'pyqt'
+
+	type: CaptchaType = CaptchaType.AUTO
+	function_for_manual: Callable = default_function_for_manual_solve_captcha
+	function_for_pyqt: Callable = default_function_for_pyqt_solve_captcha
+
+
+@dataclass
+class UserMail:
+	"""User"""
+	name: str = ''
+	address: str = ''
+	extra: dict = field(default_factory=dict)
+
+	def __str__(self):
+		return f"<UserMail [{self.address}]>"
+
+	def to_dict(self) -> dict[str, any]:
+		"""
+		Object to dict
+
+		:returns: :py:obj:`dict`
+		"""
+		return asdict(self)
+
+@dataclass
+class AccountAddress:
+	"""One user can have many addresses"""
+	id: str = ''
+	email: str = ''
+	name: str = ''
+
+	def __str__(self):
+		return f"<AccountAddress [{self.email}, {self.name}]>"
+
+	def to_dict(self) -> dict[str, any]:
+		"""
+		Object to dict
+
+		:returns: :py:obj:`dict`
+		"""
+		return asdict(self)
+
+@dataclass
+class Message:
+	"""Message"""
+	id: str = ''
+	conversation_id: str = ''
+	subject: str = ''
+	unread: bool = False
+	sender: UserMail = field(default_factory=UserMail)
+	recipients: list[UserMail] = field(default_factory=list)
+	cc: list[UserMail] = field(default_factory=list)
+	bcc: list[UserMail] = field(default_factory=list)
+	time: int = 0
+	size: int = 0
+	body: str = ''
+	type: str = ''
+	external_id: str = ''
+	in_reply_to: str = ''
+	plain_transfer_encoding: str = field(default='quoted-printable')
+	extra: dict = field(default_factory=dict)
+
+	def __str__(self):
+		ellipsis_str = '...' if len(self.subject) > 20 else ','
+		cropped_subject = self.subject[:20]
+		return f"<Message [{cropped_subject}{ellipsis_str} id: {self.id[:10]}...]>"
+
+	def to_dict(self) -> dict[str, any]:
+		"""
+		Object to dict
+
+		:returns: :py:obj:`dict`
+		"""
+		return asdict(self)
+
+@dataclass
+class PgpPairKeys:
+	"""PGP pair keys"""
+	is_primary: bool = False
+	is_user_key: bool = False
+	fingerprint_public: Optional[str] = None
+	fingerprint_private: Optional[str] = None
+	public_key: Optional[str] = None
+	private_key: Optional[str] = None
+	passphrase: Optional[str] = None
+	email: Optional[str] = None
+
+	def __str__(self):
+		fingerprint = self.fingerprint_private or self.fingerprint_public
+		return f"<PGPKey [{fingerprint or None}, is_primary: {self.is_primary}, is_user_key: {self.is_user_key}]>"
+
+	def to_dict(self) -> dict[str, any]:
+		"""
+		Object to dict
+
+		:returns: :py:obj:`dict`
+		"""
+		return asdict(self)
+
+"""PGP
+https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/pgp.py
+"""
+class PGP:
+	def __init__(self):
+		self.iv = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+		self.pairs_keys: list[PgpPairKeys] = list()
+		self.aes256_keys = dict()
+
+	def decrypt(self, data: str, private_key: Optional[str] = None, passphrase: Optional[str] = None) -> str:
+		"""Decrypt pgp with private key & passphrase."""
+		encrypted_message = self.message(data)
+
+		if not private_key:
+			fingerprint = self._get_public_fingerprint_from_message(encrypted_message)
+			pair = self._get_pair_keys(fingerprint=fingerprint)
+			if pair is None:
+				raise NoKeysForDecryptThisMessage(NoKeysForDecryptThisMessage.__doc__, 'you need private key for public key:', fingerprint)
+			private_key = pair.private_key
+			passphrase = pair.passphrase
+
+		pgp_private_key, _ = self.key(private_key)
+		with pgp_private_key.unlock(passphrase) as key:
+			message = key.decrypt(encrypted_message).message
+
+		# Some messages are encoded in latin_1, so we will recode them in utf-8
+		try:
+			if not isinstance(message, str):
+				message = message.decode('utf-8')
+			message = message.encode('latin_1').decode('utf-8')
+		except (UnicodeEncodeError, UnicodeDecodeError):
+			pass
+
+		return message
+
+	def encrypt(self, data: str, public_key: Optional[str] = None) -> str:
+		"""Encrypt pgp with public key."""
+		if not public_key:
+			public_key = self._get_pair_keys(is_primary=True).public_key
+
+		public_key, _ = self.key(public_key)
+		message = self.create_message(data)
+		encrypted_message = str(public_key.encrypt(message))
+
+		return encrypted_message
+
+	def decrypt_session_key(self, encrypted_key: str) -> bytes:
+		"""Decrypt session key."""
+		if self.aes256_keys.get(encrypted_key):
+			return self.aes256_keys[encrypted_key]
+
+		encrypted_message = self.message(b64decode(encrypted_key))
+		fingerprint = self._get_public_fingerprint_from_message(encrypted_message)
+		pair_keys = self._get_pair_keys(fingerprint=fingerprint)
+		pgp_private_key, _ = self.key(pair_keys.private_key)
+
+		with pgp_private_key.unlock(pair_keys.passphrase) as key:
+			subkey = tuple(dict(key.subkeys).values())[0]
+			pkesk = encrypted_message._sessionkeys[0]
+			alg, aes256_key = pkesk.decrypt_sk(subkey._key)
+
+		return aes256_key
+
+	def encrypt_session_key(self, session_key: bytes, public_key: Optional[Union[str, PGPKey]] = None) -> bytes:
+		"""Encrypt session key."""
+		if not public_key:
+			public_key = self._get_pair_keys(is_primary=True).public_key
+		if isinstance(public_key, str):
+			public_key, _ = self.key(public_key)
+
+		message = self.create_message('message for encrypt')
+		encrypted_message = public_key.encrypt(message, sessionkey=session_key)
+		encrypted_session_key = bytes(encrypted_message._sessionkeys[0])
+
+		return encrypted_session_key
+
+	def encrypt_with_session_key(self, message: str, session_key: Optional[bytes] = None) -> tuple[bytes, bytes, bytes]:
+		"""Encrypt message with session key"""
+		if not session_key:
+			session_key = os.urandom(32)
+
+		pgp_message = self.create_message(message)
+
+		pair_keys = self._get_pair_keys(is_primary=True)
+		pgp_private_key, _ = self.key(pair_keys.private_key)
+		with pgp_private_key.unlock(pair_keys.passphrase) as key:
+			pgp_message |= key.sign(pgp_message)
+		signature = bytes(pgp_message.signatures[0])
+
+		encrypted_message = pgp_message.encrypt(pair_keys.passphrase, session_key)
+
+		lines_encrypted_message_pgp = str(encrypted_message).split('\n')
+		del lines_encrypted_message_pgp[2]  # delete information from PGPy (OpenPGP.js doesn't have it), ProtonMail doesn't work with it
+		encrypted_message_pgp = '\n'.join(lines_encrypted_message_pgp)
+		encrypted_message = self.message(encrypted_message_pgp)
+
+		return bytes(encrypted_message), session_key, signature
+
+	def aes256_decrypt(self, data: bytes, key: bytes) -> Union[bytes, int]:
+		"""Decrypt AES256."""
+		decryptor = Cipher(
+			algorithms.AES(key),
+			modes.CFB(self.iv),
+			backend=default_backend()
+		).decryptor()
+		decrypted_data = decryptor.update(data) + decryptor.finalize()
+
+		return decrypted_data[18:-22]
+
+	def aes256_encrypt(self, message: str, session_key: Optional[bytes] = None) -> tuple[bytes, bytes]:
+		"""Encrypt AES256."""
+		if not session_key:
+			session_key = os.urandom(32)
+		binary_message = message.encode() if isinstance(message, str) else message
+		encryptor = Cipher(
+			algorithms.AES(session_key),
+			modes.CFB(self.iv),
+			backend=default_backend()
+		).encryptor()
+		encrypted_message = encryptor.update(binary_message) + encryptor.finalize()
+		body_key = b64encode(session_key)
+
+		return encrypted_message, body_key
+
+	def aes_gcm_encrypt(self, message: str, session_key: Optional[bytes] = None) -> bytes:
+		"""Encrypt AES GCM."""
+		if not session_key:
+			session_key = os.urandom(32)
+		iv = os.urandom(16)
+
+		aesgcm = AESGCM(session_key)
+		binary_message = message.encode() if isinstance(message, str) else message
+		encrypted_message = aesgcm.encrypt(iv, binary_message, None)
+
+		iv_and_message = iv + encrypted_message
+
+		return iv_and_message
+
+	@staticmethod
+	def create_message(blob: any):
+		"""Create new pgp message from blob."""
+		return PGPMessage.new(blob, compression=False)
+
+	@staticmethod
+	def message(blob: any) -> PGPMessage:
+		"""Load pgp message from blob."""
+		return PGPMessage.from_blob(blob)
+
+	@staticmethod
+	def key(blob: any) -> PGPKey:
+		"""Load pgp key from blob."""
+		return PGPKey.from_blob(blob)
+
+	def _get_pair_keys(self, fingerprint: Optional[str] = None, is_primary: Optional[bool] = None, is_user_key: bool = False) -> Optional[PgpPairKeys]:
+		for pair in self.pairs_keys:
+			if is_primary is not None and is_primary != pair.is_primary:
+				continue
+			if pair.is_user_key != is_user_key:
+				continue
+			fingerprint_public = pair.fingerprint_public or str()
+			fingerprint_private = pair.fingerprint_private or str()
+			if fingerprint is not None and fingerprint[-16:].upper() not in (fingerprint_public[-16:].upper(), fingerprint_private[-16:].upper()):
+				continue
+			return pair
+		return None
+
+	def _get_public_fingerprint_from_message(self, message: PGPMessage) -> str:
+		fingerprint = list(message.issuers)[0]
+		return fingerprint
+
+"""Utils downloaded from the official repository:
+https://github.com/ProtonMail/proton-python-client/blob/master/proton/srp/util.py
+https://github.com/ProtonMail/proton-python-client/blob/master/proton/srp/pmhash.py
+
+Modified here:
+https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/utils/utils.py
+"""
+class PMHash:
+	"""Custom expanded version of SHA512"""
+
+	def __init__(self, binary: bytes = b''):
+		self.binary = binary
+
+	def update(self, binary: bytes) -> None:
+		self.binary += binary
+
+	def digest(self) -> bytes:
+		return b''.join([
+			hashlib.sha512(self.binary + b'\0').digest(),
+			hashlib.sha512(self.binary + b'\1').digest(),
+			hashlib.sha512(self.binary + b'\2').digest(),
+			hashlib.sha512(self.binary + b'\3').digest()
+		])
+
+def pm_hash(binary: bytes = b'') -> object:
+	return PMHash(binary)
+
+def bcrypt_b64_encode(binary: bytes) -> bytes:
+	bcrypt_base64 = b'./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'  # noqa
+	std_base64chars = b'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'  # noqa
+	binary = base64.b64encode(binary)
+	return binary.translate(bytes.maketrans(std_base64chars, bcrypt_base64))
+
+def hash_password(hash_class: callable, password: bytes, salt: bytes, modulus: bytes) -> bytes:
+	salt = (salt + b'proton')[:16]
+	salt = bcrypt_b64_encode(salt)[:22]
+	hashed = bcrypt.hashpw(password, b'$2y$10$' + salt)
+	return hash_class(hashed + modulus).digest()
+
+def bytes_to_long(binary: bytes) -> int:
+	return int.from_bytes(binary, 'little')
+
+def long_to_bytes(num: int, num_bytes: int) -> bytes:
+	return num.to_bytes(num_bytes, 'little')
+
+def get_random(num_bytes: int) -> int:
+	return bytes_to_long(os.urandom(num_bytes))
+
+def get_random_of_length(num_bytes: int) -> int:
+	offset = (num_bytes * 8) - 1
+	return get_random(num_bytes) | (1 << offset)
+
+def custom_hash(hash_class: callable, *args: int) -> int:
+	hashed = hash_class()
+	for i in args:
+		if i is not None:
+			data = long_to_bytes(i, SRP_LEN_BYTES) if isinstance(i, int) else i
+			hashed.update(data)
+
+	return bytes_to_long(hashed.digest())
+
+def delete_duplicates_cookies_and_reset_domain(func):
+	def wrapper(self: Self, *args, **kwargs):
+		response = func(self, *args, **kwargs)
+
+		current_cookies: dict = self.session.cookies.get_dict()
+		new_cookies: dict = response.cookies.get_dict()
+		current_cookies.update(new_cookies)  # cookies without duplicates
+
+		self.session.cookies.clear()
+		for name, value in current_cookies.items():
+			self.session.cookies.set(name=name, value=value)  # reset domain
+
+		return response
+	return wrapper
+
+"""Secure Remote Password(SRP) downloaded from the official repository:
+https://github.com/ProtonMail/proton-python-client/blob/master/proton/srp/_pysrp.py
+
+Modified here:
+https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/utils/pysrp.py
+
+N	A large safe prime (N = 2q+1, where q is prime)
+	 All arithmetic is done modulo N.
+g	A generator modulo N
+k	Multiplier parameter (k = H(N, g) in SRP-6a, k = 3 for legacy SRP-6)
+s	User's salt
+I	Username
+p	Cleartext Password
+H()  One-way hash function
+^	(Modular) Exponentiation
+u	Random scrambling parameter
+a,b  Secret ephemeral values
+A,B  Public ephemeral values
+x	Private key (derived from p and s)
+v	Password verifier
+"""
+
+def get_ng(modulus_bin: bytes, g_hex: bytes) -> tuple[int, int]:
+	return bytes_to_long(modulus_bin), int(g_hex, 16)
+
+
+def hash_k(hash_class: callable, g: int, modulus: int, width: int) -> int:
+	hashed = hash_class()
+	hashed.update(g.to_bytes(width, 'little'))
+	hashed.update(modulus.to_bytes(width, 'little'))
+	return bytes_to_long(hashed.digest())
+
+
+def password_hasher(hash_class: callable, salt: bytes, password: bytes, modulus: int) -> int:
+	hashed_password = hash_password(
+		hash_class,
+		password,
+		salt,
+		long_to_bytes(modulus, SRP_LEN_BYTES),
+	)
+	return bytes_to_long(hashed_password)
+
+
+def calculate_client_proof(hash_class: callable, challenge_int: int, server_challenge_int: int, session_key: bytes) -> bytes:
+	hashed = hash_class()
+	hashed.update(long_to_bytes(challenge_int, SRP_LEN_BYTES))
+	hashed.update(long_to_bytes(server_challenge_int, SRP_LEN_BYTES))
+	hashed.update(session_key)
+	return hashed.digest()
+
+
+def calculate_server_proof(hash_class: callable, challenge_int: int, client_proof: bytes, session_key: bytes) -> bytes:
+	hashed = hash_class()
+	hashed.update(long_to_bytes(challenge_int, SRP_LEN_BYTES))
+	hashed.update(client_proof)
+	hashed.update(session_key)
+	return hashed.digest()
+
+
+class User:
+	def __init__(self, password: str, modulus_bin: bytes, g_hex: bytes = b"2"):
+		self.password: bin = password.encode()
+		self.hash_class = pm_hash
+		self.modulus_int, self.g = get_ng(modulus_bin, g_hex)
+		self.k = hash_k(self.hash_class, self.g, self.modulus_int, SRP_LEN_BYTES)
+
+		self.random_int = get_random_of_length(32)
+		self.challenge_int = pow(self.g, self.random_int, self.modulus_int)
+		self.expected_server_proof = None
+		self._authenticated = False
+
+		self.bytes_s = None
+		self.v = None
+		self.client_proof = None
+		self.session_key = None
+		self.S = None
+		self.server_challenge_int = None
+		self.hashed_server_challenge = None
+		self.hashed_password = None
+
+	def authenticated(self) -> bool:
+		return self._authenticated
+
+	def get_challenge(self) -> bytes:
+		return long_to_bytes(self.challenge_int, SRP_LEN_BYTES)
+
+	def process_challenge(self, bytes_s: bytes, bytes_server_challenge: bytes) -> Union[bytes, None]:
+		"""Returns M or None if SRP-6a safety check is violated."""
+		self.bytes_s = bytes_s
+		self.server_challenge_int = bytes_to_long(bytes_server_challenge)
+
+		# SRP-6a safety check
+		if (self.server_challenge_int % self.modulus_int) == 0:
+			return None
+
+		self.hashed_server_challenge = custom_hash(
+			self.hash_class,
+			self.challenge_int,
+			self.server_challenge_int
+		)
+
+		# SRP-6a safety check
+		if self.hashed_server_challenge == 0:
+			return None
+
+		self.hashed_password = password_hasher(
+			self.hash_class,
+			self.bytes_s,
+			self.password,
+			self.modulus_int
+		)
+		self.v = pow(self.g, self.hashed_password, self.modulus_int)
+		self.S = pow(
+			(self.server_challenge_int - self.k * self.v),
+			(self.random_int + self.hashed_server_challenge * self.hashed_password),
+			self.modulus_int
+		)
+
+		self.session_key = long_to_bytes(self.S, SRP_LEN_BYTES)
+		self.client_proof = calculate_client_proof(
+			self.hash_class,
+			self.challenge_int,
+			self.server_challenge_int,
+			self.session_key
+		)
+		self.expected_server_proof = calculate_server_proof(
+			self.hash_class,
+			self.challenge_int,
+			self.client_proof,
+			self.session_key
+		)
+
+		return self.client_proof
+
+	def verify_session(self, server_proof: bytes) -> None:
+		if self.expected_server_proof == server_proof:
+			self._authenticated = True
+
+	def compute_v(self, bytes_s: Optional[bytes] = None) -> tuple[bytes, bytes]:
+		if bytes_s is None:
+			self.bytes_s = long_to_bytes(
+				get_random_of_length(SALT_LEN_BYTES),
+				SALT_LEN_BYTES
+			)
+		else:
+			self.bytes_s = bytes_s
+		self.hashed_password = password_hasher(
+			self.hash_class,
+			self.bytes_s,
+			self.password,
+			self.modulus_int
+		)
+
+		return (
+			self.bytes_s,
+			long_to_bytes(pow(self.g, self.hashed_password, self.modulus_int), SRP_LEN_BYTES)
+		)
+	
+	def get_ephemeral_secret(self) -> bytes:
+		return long_to_bytes(self.random_int, SRP_LEN_BYTES)
+
+	def get_session_key(self) -> Union[bytes, None]:
+		return self.session_key if self._authenticated else None
+
+"""
+Utils for auto solve CAPTCHA downloaded from the other repository:
+https://github.com/gravilk/protonmail-documented/
+
+Modified here:
+https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/utils/captcha_auto_solver_utils.py
+"""
+
+N_LEADING_ZEROS_REQUIRED = 13
+X_OFFSET = -27  # Puzzle offsets are static. It was found by trial and error
+Y_OFFSET = -34
+
+
+def solve_challenge(challenge: str) -> int:
+	"""Solve CAPTCHA challenge"""
+	curr = 0
+	while True:
+		input_str = f'{curr}{challenge}'
+		result = hashlib.sha256(input_str.encode()).hexdigest()
+
+		j = (N_LEADING_ZEROS_REQUIRED + 3) // 4
+		k = result[:j]
+		l = int(k, 16)
+
+		if l < 2 ** (4 * j - N_LEADING_ZEROS_REQUIRED):
+			return curr
+		else:
+			curr += 1
+
+
+def get_captcha_puzzle_coordinates(image_bytes: bytes) -> Optional[tuple[int, int]]:
+	"""Get CAPTCHA puzzle coordinates"""
+	import cv2
+	import numpy as np
+
+	np_array = np.frombuffer(image_bytes, np.uint8)
+	img = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
+	img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
+	_, thresh = cv2.threshold(img_gray, 190, 255, cv2.THRESH_BINARY_INV)
+	contours, hierarchy = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+	hierarchy = hierarchy[0]
+
+	for contour, sub_hierarchy in zip(contours, hierarchy):
+		if sub_hierarchy[2] > 0 or sub_hierarchy[3] > 0:
+			continue
+		area = cv2.contourArea(contour)
+		if 1700 < area < 1800:
+			moments = cv2.moments(contour)
+			coordinate_x = int(moments['m10'] / moments['m00']) + X_OFFSET
+			coordinate_y = int(moments['m01'] / moments['m00']) + Y_OFFSET
+			return coordinate_x, coordinate_y
+	return None
+
+"""Client for Proton Mail API
+https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/client.py
+"""
+class ProtonMail:
+	"""
+	Client for api protonmail.
+	"""
+	def __init__(self, proxy: Optional[str] = None, logging_level: Optional[int] = 2, logging_func: Optional[callable] = print):
+		"""
+		:param proxy: proxy for all requests, template: ``http://Username:Password@host-or-ip.com:port``
+		:type proxy: ``str``
+		:param logging_level: logging level 1-4 (DEBUG, INFO, WARNING, ERROR), default 2[INFO].
+		:type logging_level: ``int``
+		:param logging_func: logging function. default print.
+		:type logging_func: ``callable``
+		"""
+		self.logger = Logger(logging_level, logging_func)
+		self.proxy = proxy
+		self.pgp = PGP()
+		self.user = None
+		self._session_path = None
+		self._session_auto_save = False
+		self.account_addresses: list[AccountAddress] = []
+
+		self.session = Session()
+		self.session.proxies = {'http': self.proxy, 'https': self.proxy} if self.proxy else dict()
+		self.session.headers.update(DEFAULT_HEADERS)
+
+	def login(self, username: str, password: str, getter_2fa_code: callable = lambda: input("enter 2FA code:"), login_type: LoginType = LoginType.WEB,
+			  captcha_config: CaptchaConfig = CaptchaConfig()) -> None:
+		"""
+		Authorization in ProtonMail.
+
+		:param username: your ProtonMail address.
+		:type username: ``str``
+		:param password: your password.
+		:type password: ``str``
+		:param getter_2fa_code: function to get Two-Factor Authentication(2FA) code. default: input
+		:type getter_2fa_code: ``callable``
+		:param login_type: Type for login, dev - simple login, fewer requests but maybe often CAPTCHA, web - more requests, CAPTCHA like in web. default: WEB
+		:type login_type: ``Enum: LoginType``
+		:param captcha_config: Config for CAPTCHA resolver (auto, manual or pyqt). Default: auto. More: https://github.com/opulentfox-29/protonmail-api-client?tab=readme-ov-file#solve-captcha
+		:type login_type: ``CaptchaConfig``
+		:returns: :py:obj:`None`
+		"""
+		self.session.headers['x-pm-appversion'] = PM_APP_VERSION_DEV
+		if login_type == LoginType.WEB:
+			self.session.headers['x-pm-appversion'] = PM_APP_VERSION_ACCOUNT
+
+			anonym_session_info = self._crate_anonym_session()
+
+			self._get_tokens(anonym_session_info)  # Cookies for anonym user (not logged in the account yet)
+
+		data = {'Username': username}
+
+		info = self._post('account', 'core/v4/auth/info', json=data).json()
+		client_challenge, client_proof, spr_session = self._parse_info_before_login(info, password)
+
+		auth = self._post('account', 'core/v4/auth', json={
+			'Username': username,
+			'ClientEphemeral': client_challenge,
+			'ClientProof': client_proof,
+			'SRPSession': spr_session,
+			'PersistentCookies': 1,
+		}).json()
+
+		if auth['Code'] == 9001:  # Captcha
+			self._captcha_processing(auth, captcha_config)
+
+			auth = self._post('account', 'core/v4/auth', json={
+				'Username': username,
+				'ClientEphemeral': client_challenge,
+				'ClientProof': client_proof,
+				'SRPSession': spr_session,
+				'PersistentCookies': 1,
+			}).json()
+
+		if self._login_process(auth):
+			self.logger.info("login success", "green")
+		else:
+			self.logger.error("login failure")
+
+		if login_type == LoginType.DEV:
+			self._get_tokens(auth)
+
+		if auth["TwoFactor"]:
+			if not auth["2FA"]["TOTP"]:
+				raise NotImplementedError("Only TOTP is supported as Two-Factor Authentication(2FA) method. Disable FIDO2/U2F.")
+			domain = 'account' if login_type == LoginType.WEB else 'mail'
+			response_2fa = self._post(domain, 'core/v4/auth/2fa', json={'TwoFactorCode': getter_2fa_code()})
+			if response_2fa.status_code != 200:
+				raise InvalidTwoFactorCode(f"Invalid Two-Factor Authentication(2FA) code: {response_2fa.json()['Error']}")
+
+		user_private_key_password = self._get_user_private_key_password(password)
+		if login_type == LoginType.WEB:
+			user_pk_password_data = {'type': 'default', 'keyPassword': user_private_key_password}
+			encrypted_user_pk_password_data = self.pgp.aes_gcm_encrypt(json.dumps(user_pk_password_data, separators=(',', ':')))
+			b64_encrypted_user_pk_password_data = b64encode(encrypted_user_pk_password_data).decode()
+
+			payload_for_create_fork = {
+				'Payload': b64_encrypted_user_pk_password_data,
+				'ChildClientID': 'web-mail',
+				'Independent': 0,
+			}
+
+			response_data = self._post('account', 'auth/v4/sessions/forks', json=payload_for_create_fork).json()
+
+			self.session.headers['x-pm-appversion'] = PM_APP_VERSION_MAIL
+			fork_data = self._get('mail', f"auth/v4/sessions/forks/{response_data['Selector']}").json()
+
+			self._get_tokens(fork_data)
+
+		self._parse_info_after_login(password, user_private_key_password)
+
+	def send_message(self, message: Message, delivery_time: Optional[int] = None, account_address: Optional[AccountAddress] = None) -> Message:
+		"""
+		Send the message.
+
+		:param message: The message you want to send.
+		:type message: ``Message``
+		:param delivery_time: timestamp (seconds) for scheduled delivery message, default: None (send now)
+		:type delivery_time: ``int``
+		:param account_address: If you have more than 1 address for 1 account (premium only), you can choose which address to send messages from,
+								default: None (send from first address)
+		:type account_address: ``AccountAddress``
+		:returns: :py:obj:`Message`
+		"""
+		if delivery_time and delivery_time <= datetime.now().timestamp():
+			raise ValueError(f"Delivery time ({delivery_time}) is less than current time. You can't send message to the past!")
+		recipients_info = []
+		for recipient in message.recipients:
+			recipient_info = self.__check_email_address(recipient)
+			recipients_info.append({
+				'address': recipient.address,
+				'type': 1 if recipient_info['RecipientType'] == 1 else 32,
+				'public_key': recipient_info['Keys'][0]['PublicKey'] if recipient_info['Keys'] else None,
+			})
+		for cc_recipient in message.cc:
+			cc_info = self.__check_email_address(cc_recipient)
+			recipients_info.append({
+				'address': cc_recipient.address,
+				'type': 1 if cc_info['RecipientType'] == 1 else 32,
+				'public_key': cc_info['Keys'][0]['PublicKey'] if cc_info['Keys'] else None,
+			})
+		for bcc_recipient in message.bcc:
+			bcc_info = self.__check_email_address(bcc_recipient)
+			recipients_info.append({
+				'address': bcc_recipient.address,
+				'type': 1 if bcc_info['RecipientType'] == 1 else 32,
+				'public_key': bcc_info['Keys'][0]['PublicKey'] if bcc_info['Keys'] else None,
+			})
+		draft = self.create_draft(message, decrypt_body=False, account_address=account_address)
+		multipart = self._multipart_encrypt(message, recipients_info, delivery_time)
+
+		headers = {
+			"Content-Type": multipart.content_type
+		}
+		params = {
+			'Source': 'composer',
+		}
+
+		response = self._post(
+			'mail',
+			f'mail/v4/messages/{draft.id}',
+			headers=headers,
+			params=params,
+			data=multipart
+		).json()
+		if response.get('Error'):
+			raise SendMessageError(f"Can't send message: {response['Error']}")
+		sent_message_dict = response['Sent']
+		sent_message = self._convert_dict_to_message(sent_message_dict)
+		sent_message.body = self.pgp.decrypt(sent_message.body)
+		self._multipart_decrypt(sent_message)
+
+		return sent_message
+
+	def create_draft(self, message: Message, decrypt_body: Optional[bool] = True, account_address: Optional[AccountAddress] = None) -> Message:
+		"""Create the draft."""
+		if not account_address:
+			account_address = self.account_addresses[0]
+		pgp_body = self.pgp.encrypt(message.body)
+
+		# Sanitize external_id and in_reply_to if present
+		external_id = message.external_id
+		if external_id and external_id.startswith('<') and external_id.endswith('>'):
+			external_id = external_id[1:-1]
+
+		in_reply_to = message.in_reply_to
+		if in_reply_to and in_reply_to.startswith('<') and in_reply_to.endswith('>'):
+			in_reply_to = in_reply_to[1:-1]
+
+		parent_id = None
+		if in_reply_to:
+			# Search for parent message by ExternalID
+			filter_params = {
+				"Page": 0,
+				"PageSize": 1,
+				"ExternalID": in_reply_to,
+				"AddressID": account_address.id,
+			}
+			resp = self._get('mail', 'mail/v4/messages', params=filter_params).json()
+			msgs = resp.get("Messages", [])
+			if msgs:
+				parent_id = msgs[0]["ID"]
+			else:
+				parent_id = in_reply_to
+
+		data = {
+			'Message': {
+				'ToList': [],
+				'CCList': [],
+				'BCCList': [],
+				'Subject': message.subject,
+				'MIMEType': 'text/plain',
+				'RightToLeft': 0,
+				'Sender': {
+					'Name': account_address.name,
+					'Address': account_address.email,
+				},
+				'AddressID': account_address.id,
+				'Unread': 0,
+				'Body': pgp_body,
+				'ExternalID': external_id,
+			},
+		}
+		if parent_id:
+			data['ParentID'] = parent_id
+			data['Action'] = 0 # reply
+		for recipient in message.recipients:
+			data['Message']['ToList'].append(
+				{
+					'Name': recipient.name,
+					'Address': recipient.address,
+				}
+			)
+		for cc_recipient in getattr(message, 'cc', []):
+			data['Message']['CCList'].append(
+				{
+					'Name': cc_recipient.name,
+					'Address': cc_recipient.address,
+				}
+			)
+		for bcc_recipient in getattr(message, 'bcc', []):
+			data['Message']['BCCList'].append(
+				{
+					'Name': bcc_recipient.name,
+					'Address': bcc_recipient.address,
+				}
+			)
+
+		response = self._post(
+			'mail',
+			'mail/v4/messages',
+			json=data
+		).json()['Message']
+
+		draft = self._convert_dict_to_message(response)
+
+		if decrypt_body:
+			draft.body = self.pgp.decrypt(draft.body)
+			self._multipart_decrypt(draft)
+
+		return draft
+
+	def save_session(self, path: str) -> None:
+		"""
+		Saving the current session to a file for later loading.
+
+		WARNING: the file contains sensitive data, do not share it with anyone,
+		otherwise someone will gain access to your mail.
+		"""
+		sliced_aes256_keys = dict(list(self.pgp.aes256_keys.items())[:100])
+		pgp = {
+			'pairs_keys': [pair.to_dict() for pair in self.pgp.pairs_keys],
+			'aes256_keys': sliced_aes256_keys,
+		}
+		account_addresses = [{
+			'id': account_address.id,
+			'email': account_address.email,
+			'name': account_address.name,
+		} for account_address in self.account_addresses]
+		headers = dict(self.session.headers)
+		cookies = self.session.cookies.get_dict()
+		options = {
+			'pgp': pgp,
+			'account_addresses': account_addresses,
+			'headers': headers,
+			'cookies': cookies,
+		}
+		with open(path, 'wb') as file:
+			pickle.dump(options, file)
+
+	def load_session(self, path: str, auto_save: bool = True) -> None:
+		"""
+		Loading a previously saved session.
+
+		:param path: session file path
+		:type path: ``str``
+		:param auto_save: when updating tokens, automatically save changes
+		:type auto_save: ``bool``
+		"""
+		self._session_path = path
+		self._session_auto_save = auto_save
+
+		with open(path, 'rb') as file:
+			options = pickle.load(file)
+
+		try:
+			pgp = options['pgp']
+			account_addresses = options['account_addresses']
+			headers = options['headers']
+			cookies = options['cookies']
+
+			self.pgp.pairs_keys = [PgpPairKeys(**pair) for pair in pgp['pairs_keys']]
+			self.pgp.aes256_keys = pgp['aes256_keys']
+
+			self.account_addresses = [AccountAddress(
+				id=account_address['id'],
+				email=account_address['email'],
+				name=account_address['name'],
+			) for account_address in account_addresses]
+
+			self.session.headers = headers
+			for name, value in cookies.items():
+				self.session.cookies.set(name, value)
+		except Exception as exc:
+			raise LoadSessionError(LoadSessionError.__doc__, exc)
+
+	@staticmethod
+	def create_mail_user(**kwargs) -> UserMail:
+		"""Create UserMail."""
+		kwargs = deepcopy(kwargs)
+		address = kwargs['address']
+		match = re.match(r'^(.*?)\s*<([^>]+)>$', address)
+		if match:
+			if not kwargs.get('name'):
+				kwargs['name'] = match.group(1).strip()
+			kwargs['address'] = match.group(2).strip()
+		elif address.startswith('<') and address.endswith('>'):
+			kwargs['address'] = address[1:-1]
+
+		if not kwargs.get('name'):
+			kwargs['name'] = address
+		return UserMail(**kwargs)
+
+	@staticmethod
+	def create_message(**kwargs) -> Message:
+		"""Create Message."""
+		kwargs = deepcopy(kwargs)
+		recipients = kwargs.get('recipients', [])
+		recipients = [
+			{'address': recipient}
+			if isinstance(recipient, str)
+			else recipient
+			for recipient in recipients
+		]
+		kwargs['recipients'] = [
+			ProtonMail.create_mail_user(**i)
+			for i in recipients
+		]
+		cc = kwargs.get('cc', [])
+		cc = [
+			{'address': c}
+			if isinstance(c, str)
+			else c
+			for c in cc
+		]
+		kwargs['cc'] = [
+			ProtonMail.create_mail_user(**i)
+			for i in cc
+		]
+		bcc = kwargs.get('bcc', [])
+		bcc = [
+			{'address': bc}
+			if isinstance(bc, str)
+			else bc
+			for bc in bcc
+		]
+		kwargs['bcc'] = [
+			ProtonMail.create_mail_user(**i)
+			for i in bcc
+		]
+		if kwargs.get('sender'):
+			kwargs['sender'] = ProtonMail.create_mail_user(**kwargs.get('sender'))
+
+		return Message(**kwargs)
+
+	@staticmethod
+	def _convert_dict_to_message(response: dict) -> Message:
+		"""
+		Converts dictionary to message object.
+
+		:param response: The dictionary from which the message will be created.
+		:type response: ``dict``
+		:returns: :py:obj:`Message`
+		"""
+		sender = UserMail(
+			response['Sender']['Name'],
+			response['Sender']['Address'],
+			response['Sender']
+		)
+		recipients = [
+			UserMail(
+				user['Name'],
+				user['Address'],
+				user
+			) for user in response['ToList']
+		]
+		cc = [
+			UserMail(
+				user['Name'],
+				user['Address'],
+				user
+			) for user in response.get('CCList', [])
+		]
+		bcc = [
+			UserMail(
+				user['Name'],
+				user['Address'],
+				user
+			) for user in response.get('BCCList', [])
+		]
+
+		message = Message(
+			id=response['ID'],
+			conversation_id=response['ConversationID'],
+			subject=response['Subject'],
+			unread=response['Unread'],
+			sender=sender,
+			recipients=recipients,
+			cc=cc,
+			bcc=bcc,
+			time=response['Time'],
+			size=response['Size'],
+			body=response.get('Body', ''),
+			type=response.get('MIMEType', ''),
+			extra=response,
+		)
+		return message
+
+	@staticmethod
+	def _prepare_message(message: Message) -> str:
+		"""Converting an unencrypted message into a multipart mime."""
+		data = message.body
+		msg_plain = MIMEText('', _subtype='plain')
+
+		if message.plain_transfer_encoding == '8bit':
+			msg_plain.replace_header('Content-Transfer-Encoding', '8bit')
+		elif message.plain_transfer_encoding == 'base64':
+			msg_plain.replace_header('Content-Transfer-Encoding', 'base64')
+			data = b64encode(data.encode()).decode()
+			data = '\n'.join([data[i:i + 76] for i in range(0, len(data), 76)])
+		else: # default is 'quoted-printable'
+			msg_plain.replace_header('Content-Transfer-Encoding', 'quoted-printable')
+			data = quopri.encodestring(data.encode('utf-8')).decode('utf-8')
+
+		msg_plain.set_payload(data, 'utf-8')
+		return msg_plain.as_string().replace('MIME-Version: 1.0\n', '')
+
+	def _crate_anonym_session(self) -> dict:
+		"""Create anonymous session."""
+		self.session.headers['x-enforce-unauthsession'] = 'true'
+		anonym_session_data = self._post('account', 'auth/v4/sessions').json()
+		del self.session.headers['x-enforce-unauthsession']
+
+		return anonym_session_data
+
+	def _parse_info_before_login(self, info, password: str) -> tuple[str, str, str]:
+		verified = self.pgp.message(info['Modulus'])
+		modulus = b64decode(verified.message)
+		server_challenge = b64decode(info['ServerEphemeral'])
+		salt = b64decode(info['Salt'])
+		spr_session = info['SRPSession']
+
+		self.user = User(password, modulus)
+		client_challenge = b64encode(self.user.get_challenge()).decode('utf8')
+		client_proof = b64encode(self.user.process_challenge(salt, server_challenge)).decode('utf8')
+
+		return client_challenge, client_proof, spr_session
+
+	def _captcha_processing(self, auth: dict, captcha_config: CaptchaConfig):
+		""" Processing CAPTCHA logic. """
+		self.logger.warning("Got CAPTCHA")
+		captcha_token = auth['Details']['HumanVerificationToken']
+		params = {
+			'Token': captcha_token,
+			'ForceWebMessaging': 1,
+		}
+		js_captcha = self._get('account-api', 'core/v4/captcha', params=params).text
+		send_token_func = re.search(r"return sendToken\((.*?)\);", js_captcha).group(1)
+		sub_token = ''.join(re.findall(r"'([^']+)'", send_token_func))
+
+		if captcha_config.type == CaptchaConfig.CaptchaType.AUTO:
+			proved_token = self._captcha_auto_solving(captcha_token)
+			self.logger.info("CAPTCHA auto solved")
+		elif captcha_config.type == CaptchaConfig.CaptchaType.PYQT:
+			self.logger.info("Opening a browser window to solve CAPTCHA...")
+			proved_token = captcha_config.function_for_pyqt(auth)
+			self.logger.info("CAPTCHA solved")
+		else:
+			proved_token = captcha_config.function_for_manual(auth)
+			self.logger.info("CAPTCHA manual solved")
+
+		hvt_token = f'{captcha_token}:{sub_token}{proved_token}'
+
+		self.session.headers['x-pm-human-verification-token-type'] = 'captcha'
+		self.session.headers['x-pm-human-verification-token'] = hvt_token
+
+	def _captcha_auto_solving(self, captcha_token: str) -> str:
+
+		""" Auto solve CAPTCHA. """
+		params = {
+			'challengeType': '2D',
+			'parentURL': f'https://account-api.proton.me/core/v4/captcha?Token={captcha_token}&ForceWebMessaging=1',
+			'displayedLang': 'en',
+			'supportedLangs': 'en,en,en,en',
+			'purpose': 'login',
+			'token': captcha_token,
+		}
+		init_data = self._get('account-api', 'captcha/v1/api/init', params=params).json()
+
+		params = {
+			'token': init_data['token']
+		}
+		image_captcha = self._get('account-api', 'captcha/v1/api/bg', params=params).content
+
+		puzzle_coordinates = get_captcha_puzzle_coordinates(image_captcha)
+		if puzzle_coordinates is None:
+			raise CantSolveImageCaptcha("Maybe this image is hard, just retry login or use manual CAPTCHA solver")
+
+		answers = [solve_challenge(challenge) for challenge in init_data['challenges']]
+
+		captcha_object = {
+			'x': puzzle_coordinates[0],
+			'y': puzzle_coordinates[1],
+			'answers': answers,
+			'clientData': None,
+			'pieceLoadElapsedMs': 140,
+			'bgLoadElapsedMs': 180,
+			'challengeLoadElapsedMs': 180,
+			'solveChallengeMs': 5000,
+			'powElapsedMs': 540
+		}
+		pcaptcha = json.dumps(captcha_object)
+		self.session.headers['pcaptcha'] = pcaptcha
+
+		params = {
+			'token': init_data['token'],
+			'contestId': init_data['contestId'],
+			'purpose': 'login'
+		}
+		validated = self._get('account-api', 'captcha/v1/api/validate', params=params)
+		if validated.status_code != 200:
+			raise InvalidCaptcha(f"Validate CAPTCHA returns code: {validated.status_code}")
+
+		return init_data['token']
+
+	def _login_process(self, auth: dict) -> bool:
+		if auth["Code"] not in (1000, 1001):
+			if auth["Code"] in [9001, 12087]:
+				raise InvalidCaptcha(auth['Error'])
+			if auth["Code"] == 2028:
+				raise ConnectionRefusedError(f"Too many recent logins: {auth.get('Error')}")
+
+		self.user.verify_session(b64decode(auth['ServerProof']))
+
+		return self.user.authenticated()
+
+	def _get_tokens(self, auth: dict) -> None:
+		self.session.headers['authorization'] = f'{auth["TokenType"]} {auth["AccessToken"]}'
+		self.session.headers['x-pm-uid'] = auth['UID']
+
+		json_data = {
+			'UID': auth['UID'],
+			'ResponseType': 'token',
+			'GrantType': 'refresh_token',
+			'RefreshToken': auth['RefreshToken'],
+			'RedirectURI': 'https://protonmail.com',
+			'Persistent': 0,
+			'State': self.__random_string(24),
+		}
+		response = self._post('mail', 'core/v4/auth/cookies', json=json_data)
+		if response.status_code != 200:
+			raise Exception(f"Can't get refresh token, status: {response.status_code}, json: {response.json()}")
+		self.logger.info("got cookies", "green")
+
+	def _parse_info_after_login(self, password: str, user_private_key_password: Optional[str] = None) -> None:
+		user_info = self.__get_users()['User']
+		user_pair_key = user_info['Keys'][0]
+
+		if not user_private_key_password:
+			user_private_key_password = self._get_user_private_key_password(password)
+
+		self.pgp.pairs_keys.append(PgpPairKeys(
+			is_user_key=True,
+			is_primary=True,
+			fingerprint_private=user_pair_key['Fingerprint'],
+			private_key=user_pair_key['PrivateKey'],
+			passphrase=user_private_key_password,
+			email=user_info['Email'],
+		))
+		self.logger.info("got user keys", "green")
+
+		account_addresses = self.__addresses()['Addresses']
+
+		self.account_addresses = [AccountAddress(
+			id=account_address['ID'],
+			email=account_address['Email'],
+			name=account_address['DisplayName'],
+		) for account_address in account_addresses]
+
+		for account_address in account_addresses:
+			for address_key in account_address['Keys']:
+				address_passphrase = self.pgp.decrypt(address_key['Token'], user_pair_key['PrivateKey'], user_private_key_password)
+
+				self.pgp.pairs_keys.append(PgpPairKeys(
+					is_user_key=False,
+					is_primary=bool(address_key['Primary']),
+					fingerprint_public=address_key['Fingerprints'][0],
+					fingerprint_private=address_key['Fingerprints'][1],
+					public_key=address_key['PublicKey'],
+					private_key=address_key['PrivateKey'],
+					passphrase=address_passphrase,
+					email=account_address['Email'],
+				))
+		self.logger.info("got email keys", "green")
+
+	def _get_user_private_key_password(self, password: str) -> str:
+		"""
+		Get password for the user PGP private key.
+
+		:param password: User password for the account.
+		:returns: Password for the user PGP private key.
+		"""
+		salts = self.__get_salts()['KeySalts']
+		key_salt = [salt['KeySalt'] for salt in salts if salt['KeySalt']][0]
+		bcrypt_salt = bcrypt_b64_encode(b64decode(key_salt))[:22]
+		user_private_key_password = bcrypt.hashpw(password.encode(), b'$2y$10$' + bcrypt_salt)[29:].decode()
+		return user_private_key_password
+
+	def __check_email_address(self, mail_address: Union[UserMail, str]) -> dict:
+		"""
+		Checking for the existence of an email address.
+		You cannot send a message to an unchecked address.
+
+		:param mail_address: email address to check.
+		:type mail_address: `UserMail` or `str`
+		:returns: response from the server.
+		:rtype: `dict`
+		"""
+		address = mail_address
+		if isinstance(mail_address, UserMail):
+			address = mail_address.address
+		params = {
+			'Email': address,
+		}
+		response = self._get('mail', 'core/v4/keys', params=params)
+		json_response = response.json()
+		if json_response['Code'] == 33102:
+			raise AddressNotFound(address, json_response['Error'])
+		return json_response
+
+	def _multipart_encrypt(self, message: Message, recipients_info: list[dict], delivery_time: Optional[int] = None) -> MultipartEncoder:
+		session_key = None
+		recipients_type = set(recipient['type'] for recipient in recipients_info)
+		package_types = {
+			1: 'text/plain',  # send to proton
+			32: 'multipart/mixed',  # send to other mails
+		}
+		fields = {
+			"DelaySeconds": (None, '10'),
+		}
+		if delivery_time:
+			fields['DeliveryTime'] = (None, str(delivery_time))
+
+		for recipient_type in recipients_type:
+			is_send_to_proton = recipient_type == 1
+
+			if is_send_to_proton:
+				prepared_body = message.body
+			else:
+				prepared_body = self._prepare_message(message)
+
+			body_message, session_key, signature = self.pgp.encrypt_with_session_key(prepared_body, session_key)
+
+			package_type = package_types[recipient_type]
+			fields.update({
+				f"Packages[{package_type}][MIMEType]": (None, package_type),
+				f"Packages[{package_type}][Body]": ('blob', body_message, 'application/octet-stream'),
+				f"Packages[{package_type}][Type]": (None, str(recipient_type)),
+			})
+			if not is_send_to_proton:
+				fields.update({
+					f"Packages[{package_type}][BodyKey][Key]": (None, b64encode(session_key)),
+					f"Packages[{package_type}][BodyKey][Algorithm]": (None, 'aes256'),
+				})
+
+		for recipient in recipients_info:
+			package_type = package_types[recipient['type']]
+			address = recipient['address']
+			fields.update({
+				f"Packages[{package_type}][Addresses][{address}][Type]": (None, str(recipient['type'])),
+				f"Packages[{package_type}][Addresses][{address}][Signature]": (None, '0'),
+			})
+			if recipient['public_key']:  # proton
+				key_packet = b64encode(self.pgp.encrypt_session_key(session_key, recipient['public_key'])).decode()
+				fields[f"Packages[{package_type}][Addresses][{address}][BodyKeyPacket]"] = (None, key_packet)
+
+		boundary = '------WebKitFormBoundary' + self.__random_string(16)
+		multipart = MultipartEncoder(fields=fields, boundary=boundary)
+
+		return multipart
+
+	def __random_string(self, length: int) -> str:
+		random_string = ''.join(
+			random.sample(string.ascii_letters + string.digits, length)
+		)
+		return random_string
+
+	def _multipart_decrypt(self, message: Message) -> None:
+		"""Decrypt multipart/mixed in message."""
+		parser = Parser()
+		multipart = parser.parsestr(message.body)
+		if not multipart.is_multipart():
+			return
+		text = None
+		for block in multipart.walk():
+			answers = self.__multipart_decrypt_block(block)
+			if answers[0] == 'text':
+				text = answers[1]
+		message.body = text
+
+	def __multipart_decrypt_block(self, block: any) -> tuple[str, any]:
+		transfer = block.get('Content-Transfer-Encoding')
+		payload = block.get_payload(decode=True)
+
+		if transfer == 'quoted-printable':
+			return 'text', unicodedata.normalize('NFKD', payload.decode())
+		return 'none', 'none'
+
+	def _get(self, base: str, endpoint: str, **kwargs) -> Response:
+		return self.__request('get', base, endpoint, **kwargs)
+
+	def _post(self, base: str, endpoint: str, **kwargs) -> Response:
+		return self.__request('post', base, endpoint, **kwargs)
+
+	@delete_duplicates_cookies_and_reset_domain
+	def __request(self, method: str, base: str, endpoint: str, **kwargs) -> Response:
+		methods = {
+			'get': self.session.get,
+			'post': self.session.post
+		}
+		response = methods[method](f'{urls_api[base]}/{endpoint}', **kwargs)
+		if response.status_code == 401:  # access token is expired
+			self.__refresh_tokens()
+			response = methods[method](f'{urls_api[base]}/{endpoint}', **kwargs)
+		return response
+
+	def __refresh_tokens(self) -> None:
+		response = self._post('mail', 'auth/refresh')
+		if response.status_code != 200:
+			raise Exception(f"Can't update tokens, status: {response.status_code} json: {response.json()}")
+		if self._session_auto_save:
+			self.save_session(self._session_path)
+
+	def __addresses(self, params: dict = None) -> dict:
+		params = params or {
+			'Page': 0,
+			'PageSize': 150,  # max page size
+		}
+		return self._get('api', 'core/v4/addresses', params=params).json()
+
+	def __get_users(self) -> dict:
+		return self._get('account', 'core/v4/users').json()
+
+	def __get_salts(self) -> dict:
+		return self._get('account', 'core/v4/keys/salts').json()
+
+"""git-protonmail code starts here"""
 ServiceName = "git-protonmail"
 
 def generate_key():
@@ -61,26 +1642,43 @@ def decrypt_file(filepath, key):
 		f.write(decrypted)
 
 proton = ProtonMail()
+
 if os.name == "nt":
 	session_path = os.path.expanduser("~\\.git-protonmail.pickle")
 else:
 	session_path = os.path.expanduser("~/.git-protonmail.pickle")
 
 if "--authenticate" in sys.argv:
+	if "--alternate-auth" in sys.argv:
+		login_type = LoginType.DEV
+	else:
+		login_type = LoginType.WEB
+
 	username = input("Enter your Proton Mail username: ")
 	password = getpass.getpass("Enter your Proton Mail password: ")
+
 	try:
 		try:
-			proton = ProtonMail()
-			proton.login(username, password)
+			i = 1
+			while i <= 5:
+				try:
+					proton = ProtonMail()
+					proton.login(username, password, login_type=login_type)
+					break
+				except CantSolveImageCaptcha as e:
+					i += 1
+					if i > 5:
+						raise CantSolveImageCaptcha(e)
+				except Exception as e:
+					raise Exception(e)
 		except Exception:
 			try:
 				proton = ProtonMail()
-				proton.login(username, password, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.PYQT))
+				proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.PYQT))
 			except Exception:
 				try:
 					proton = ProtonMail()
-					proton.login(username, password, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.MANUAL))
+					proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.MANUAL))
 				except Exception as e:
 					sys.exit(f"\nAuthentication failed due to \"{e}\".")
 
@@ -148,9 +1746,10 @@ elif "-i" in sys.argv:
 	if not sender_account:
 		print(f"\"From:\" address {from_address} is not valid.")
 		sys.exit(1)
-
 	try:
-		proton.send_message(new_message, is_html=False, account_address=sender_account)
+		decrypt_file(session_path, key.encode()) # Decrypt session file again before sending since access token may get refreshed
+		proton.send_message(new_message, account_address=sender_account)
+		encrypt_file(session_path, key) # Encrypt session file again after sending
 	except Exception as e:
 		print(f"Failed to send message due to \"{e}\".")
 		print("Make sure your \"From:\" address is valid and you have authenticated successfully.")
@@ -180,6 +1779,10 @@ Usage: git protonmail [OPTIONS]
 Options:
   --help                 * Show this help message and exit.
   --authenticate         * Authenticate with Proton Mail using its API.
+      --alternate-auth   * Authenticate using an alternate method.
+                           Use this option if you are unable to authenticate
+                           using the default method.
+                           Use this option with --authenticate.
   --delete-session       * Delete the session saved using --authenticate.
 
 Description:
