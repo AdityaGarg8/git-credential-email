@@ -1330,7 +1330,7 @@ class ProtonMail:
 			self.logger.info("CAPTCHA auto solved", "green")
 		elif captcha_config.type == CaptchaConfig.CaptchaType.PYQT:
 			proved_token = captcha_config.function_for_pyqt(auth)
-			self.logger.info("CAPTCHA solved")
+			self.logger.info("CAPTCHA solved", "green")
 		else:
 			proved_token = captcha_config.function_for_manual(auth)
 			self.logger.info("CAPTCHA token received from user", "green")
@@ -1669,14 +1669,27 @@ if "--authenticate" in sys.argv:
 					i += 1
 					if i > 5:
 						raise CantSolveImageCaptcha(e)
-				except Exception as e:
-					raise Exception(e)
-		except Exception:
+		except (CantSolveImageCaptcha, InvalidCaptcha, ImportError) as e:
 			try:
+				if isinstance(e, CantSolveImageCaptcha):
+					print("CAPTCHA auto solve failed. Attempting to open PyQt Web Browser to solve CAPTCHA.")
+					print("If you want to try auto solve again, cancel the login (Ctrl+C) and try again.")
+				elif isinstance(e, InvalidCaptcha):
+					print("CAPTCHA auto solved an invalid CAPTCHA. Attempting to open PyQt Web Browser to solve CAPTCHA.")
+					print("If you want to try auto solve again, cancel the login (Ctrl+C) and try again.")
+				elif isinstance(e, ImportError):
+					print("OpenCV and/or NumPy is not installed. Attempting to open PyQt Web Browser to solve CAPTCHA.")
 				proton = ProtonMail()
 				proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.PYQT))
-			except Exception:
+			except (InvalidCaptcha, ImportError) as e:
 				try:
+					if isinstance(e, InvalidCaptcha):
+						print("CAPTCHA was not solved properly. Falling back to manual mode.")
+						print("If you want to try with PyQt web browser again, cancel the login (Ctrl+C) and try again.")
+					elif isinstance(e, ImportError):
+						print("PyQt6-WebEngine is not installed. Falling back to manual mode.")
+						print("Alternatively cancel the process (Ctrl+c) and install PyQt6-WebEngine for easier CAPTCHA solving.")
+						print("You can also install OpenCV and NumPy for auto solving CAPTCHA.")
 					proton = ProtonMail()
 					proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.MANUAL))
 				except Exception as e:
