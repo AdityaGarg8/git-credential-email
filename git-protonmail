@@ -1752,6 +1752,7 @@ elif "-i" in sys.argv:
 		proton.send_message(new_message, account_address=sender_account)
 		encrypt_file(session_path, key) # Encrypt session file again after sending
 	except Exception as e:
+		encrypt_file(session_path, key) # Encrypt session file if sending fails
 		print(f"Failed to send message due to \"{e}\".")
 		print("Make sure your \"From:\" address is valid and you have authenticated successfully.")
 		sys.exit("Try authenticating again by running `git protonmail --authenticate` if your session has expired or refresh token is invalid.")
