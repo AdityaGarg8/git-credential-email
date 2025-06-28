@@ -1727,6 +1727,7 @@ elif "-i" in sys.argv:
 		body = body.decode(errors='replace')
 	message_id = msg.get('Message-ID', '')
 	in_reply_to = msg.get('In-Reply-To', '')
+	transfer_encoding = msg.get('Content-Transfer-Encoding', '')
 
 	# Send message
 	new_message = proton.create_message(
@@ -1737,7 +1738,7 @@ elif "-i" in sys.argv:
 		body=body,
 		external_id=message_id,
 		in_reply_to=in_reply_to,
-		plain_transfer_encoding='8bit',
+		plain_transfer_encoding=transfer_encoding,
 	)
 	sender_account = next(
 		(acc for acc in proton.account_addresses if acc.email == from_address),
