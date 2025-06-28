@@ -216,6 +216,7 @@ def default_function_for_pyqt_solve_captcha(auth_data: dict) -> str:
 
 	url = auth_data['Details']['WebUrl']
 
+	print("Opening a browser window to solve CAPTCHA...")
 	class QuietWebEnginePage(QWebEnginePage):
 		#js messages spam the console for no reason
 		def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
@@ -909,9 +910,9 @@ class ProtonMail:
 			}).json()
 
 		if self._login_process(auth):
-			self.logger.info("login success", "green")
+			self.logger.info("Login success", "green")
 		else:
-			self.logger.error("login failure")
+			self.logger.error("Login failure", "red")
 
 		if login_type == LoginType.DEV:
 			self._get_tokens(auth)
@@ -1314,7 +1315,7 @@ class ProtonMail:
 
 	def _captcha_processing(self, auth: dict, captcha_config: CaptchaConfig):
 		""" Processing CAPTCHA logic. """
-		self.logger.warning("Got CAPTCHA")
+		self.logger.info("Got CAPTCHA", "yellow")
 		captcha_token = auth['Details']['HumanVerificationToken']
 		params = {
 			'Token': captcha_token,
@@ -1326,14 +1327,13 @@ class ProtonMail:
 
 		if captcha_config.type == CaptchaConfig.CaptchaType.AUTO:
 			proved_token = self._captcha_auto_solving(captcha_token)
-			self.logger.info("CAPTCHA auto solved")
+			self.logger.info("CAPTCHA auto solved", "green")
 		elif captcha_config.type == CaptchaConfig.CaptchaType.PYQT:
-			self.logger.info("Opening a browser window to solve CAPTCHA...")
 			proved_token = captcha_config.function_for_pyqt(auth)
 			self.logger.info("CAPTCHA solved")
 		else:
 			proved_token = captcha_config.function_for_manual(auth)
-			self.logger.info("CAPTCHA manual solved")
+			self.logger.info("CAPTCHA token received from user", "green")
 
 		hvt_token = f'{captcha_token}:{sub_token}{proved_token}'
 
@@ -1416,7 +1416,7 @@ class ProtonMail:
 		response = self._post('mail', 'core/v4/auth/cookies', json=json_data)
 		if response.status_code != 200:
 			raise Exception(f"Can't get refresh token, status: {response.status_code}, json: {response.json()}")
-		self.logger.info("got cookies", "green")
+		self.logger.info("Got cookies", "green")
 
 	def _parse_info_after_login(self, password: str, user_private_key_password: Optional[str] = None) -> None:
 		user_info = self.__get_users()['User']
@@ -1433,7 +1433,7 @@ class ProtonMail:
 			passphrase=user_private_key_password,
 			email=user_info['Email'],
 		))
-		self.logger.info("got user keys", "green")
+		self.logger.info("Got user keys", "green")
 
 		account_addresses = self.__addresses()['Addresses']
 
@@ -1457,7 +1457,7 @@ class ProtonMail:
 					passphrase=address_passphrase,
 					email=account_address['Email'],
 				))
-		self.logger.info("got email keys", "green")
+		self.logger.info("Got email keys", "green")
 
 	def _get_user_private_key_password(self, password: str) -> str:
 		"""
