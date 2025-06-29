@@ -1,7 +1,5 @@
 # git-credential-email
 
-Git credential helpers to get OAuth2 token for Microsoft Outlook, Gmail, Yahoo and AOL accounts.
-
 This repo contains the following helpers:
 
 - `git-credential-gmail`: For Gmail accounts.
@@ -9,17 +7,20 @@ This repo contains the following helpers:
 - `git-credential-yahoo`: For Yahoo accounts.
 - `git-credential-aol`: For AOL accounts.
 - `git-msgraph`: Helper to use Microsoft Graph API instead of SMTP to send emails.
+- `git-protonmail`: Helper to use ProtonMail API to send emails.
 
 They can be used with `git send-email`, especially when Outlook no longer supports app passwords.
 
 ## How does this work?
 
-It is a simple python script, based on https://github.com/google/gmail-oauth2-tools/blob/master/python/oauth2.py. It does the following:
+It is a simple python script, based on https://github.com/google/gmail-oauth2-tools/blob/master/python/oauth2.py and https://github.com/opulentfox-29/protonmail-api-client. It does the following:
 
 - Uses an OAuth2.0 `client_id` and `client_secret` to authenticate with Microsoft/Google/Yahoo/AOL and retrieve a refresh token.
 - As per demand, it uses the refresh token to generate OAuth2 access tokens as and when required.
 - The refresh token and access token is stored securely using the `keyring` module of pip. More information about this can be read from https://pypi.org/project/keyring/.
 - Everytime the helper is called, it passes the stored access token to git. If the access token has expired, the helper first refreshes it automatically and passes the new access token.
+- For APIs like Microsoft Graph and ProtonMail, it exploits the sendmail-like command ability of `git send-email`
+- For ProtonMail, the authentication flow is different. The helper uses the web API of ProtonMail to get the required keys for end to end encryption, store cookies in form of session file etc.
 
 ## Installation
 
@@ -35,6 +36,12 @@ It is a simple python script, based on https://github.com/google/gmail-oauth2-to
   pip install keyring
   ```
 
+- For **ProtonMail**, you also need to install some more modules by running:
+
+  ```bash
+  pip install bcrypt cryptography keyring PGPy13 requests requests-toolbelt typing-extensions
+  ```
+
 ### Linux
 
 #### Ubuntu/Debian
@@ -48,7 +55,7 @@ curl -L "https://github.com/AdityaGarg8/git-credential-email/releases/download/d
 	https://github.com/AdityaGarg8/git-credential-email/releases/download/debian ./" \
 	| sudo tee -a /etc/apt/sources.list.d/git-credential-email.list \
 	&& sudo apt-get update \
-	&& sudo apt-get install -y git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph
+	&& sudo apt-get install -y git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
 ```
 
 #### Fedora
@@ -57,7 +64,7 @@ Run the following to add the copr repo and install the helpers:
 
 ```bash
 sudo dnf copr enable -y adityagarg8/git-credential-email
-sudo dnf install -y git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph
+sudo dnf install -y git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
 ```
 
 ### macOS
@@ -66,7 +73,7 @@ sudo dnf install -y git-credential-gmail git-credential-outlook git-credential-y
 
 ```bash
 brew tap adityagarg8/git-credential-email
-brew install git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph
+brew install git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
 ```
 
 ### Windows
@@ -79,6 +86,8 @@ tar -xf %temp%\cred.zip -C "%ProgramFiles%\Git\mingw64\libexec\git-core"
 ```
 
 ## Setting up OAuth 2.0 client credentials
+
+**You can skip this section if you are using ProtonMail**
 
 In order to use OAuth2.0, you need to provide an OAuth 2.0 `client_id` and a `client_secret` (secret not needed in Outlook) to allow the helper to authenticate with email servers on your behalf.
 
@@ -198,9 +207,24 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
   git credential-aol --authenticate --external-auth
   ```
 
+### ProtonMail
+
+- You can authenticate with your ProtonMail credentials by running:
+
+  ```bash
+  git protonmail --authenticate
+  ```
+
+- If `--authenticate` does not work, you try adding `--alternate-auth`:
+
+  ```bash
+  git protonmail --authenticate --alternate-auth
+  ```
+
 ## Usage
 
 - Once authenticated, the refresh token gets saved in your keyring. You can run your helper to confirm the same. For example, for **Gmail** run `git credential-gmail`. It's output should now show an access token.
+- For **ProtonMail** users instead of a refresh token, a session file is stored in your `$HOME` folder and is encrypted with a random key. That key is stored in your keyring. To check if its authenticated, check for presence of `.git-protonmail.pickle` file in your `$HOME` folder. Note that this file may be hidden by default on Linux and macOS.
 
 - Now run:
 
@@ -276,6 +300,14 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
         from = Your Name <someone@aol.com> # Replace this with your name and email address
   ```
 
+### ProtonMail
+
+  ```config
+  [sendemail]
+        sendmailCmd = git-protonmail
+        from = someone@proton.me # Replace this with your email address. If you have multiple addresses (seen in paid accounts), use the address you want to send from.
+  ```
+
   **Note: Make sure you have atleast version 2.1800 of perl's [Authen::SASL](https://metacpan.org/dist/Authen-SASL) library in order to be able to use XOAUTH2 and OAUTHBEARER. You can run `cpan install Authen::SASL` to install the latest version of this library.**
 
 ## Deleting the stored authentication details
@@ -284,6 +316,12 @@ In case you want to delete the refresh token, that was stored by the helper, as 
 
 ```bash
 git credential-gmail --delete-token
+```
+
+For **ProtonMail**, you need to delete both the session file and the key that encrypted it. This command will help you for that:
+
+```bash
+git protonmail --delete-session
 ```
 
 ## Troubleshooting
@@ -305,3 +343,4 @@ In case authentication fails:
 - https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code (For adding device flow support to Outlook).
 - https://learn.microsoft.com/en-us/graph/api/user-sendmail (For Microsoft Graph API)
 - https://developer.yahoo.com/oauth2/guide/flows_authcode/ (For Yahoo).
+- https://github.com/opulentfox-29/protonmail-api-client (For ProtonMail).
