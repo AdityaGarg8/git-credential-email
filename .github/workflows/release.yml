@@ -31,6 +31,7 @@ jobs:
             ${{ github.workspace }}/git-credential-yahoo
             ${{ github.workspace }}/git-credential-aol
             ${{ github.workspace }}/git-msgraph
+            ${{ github.workspace }}/git-protonmail
           tag_name: "v${{ github.event.inputs.version }}"
           draft: false
           generate_release_notes: true
@@ -68,6 +69,7 @@ jobs:
           Section: utils
           Priority: optional
           Depends: git-email, python3-keyring
+          Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
@@ -125,6 +127,7 @@ jobs:
           Section: utils
           Priority: optional
           Depends: git-email, python3-keyring
+          Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
@@ -182,6 +185,7 @@ jobs:
           Section: utils
           Priority: optional
           Depends: git-email, python3-keyring
+          Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
@@ -239,6 +243,7 @@ jobs:
           Section: utils
           Priority: optional
           Depends: git-email, python3-keyring
+          Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
@@ -296,6 +301,7 @@ jobs:
           Section: utils
           Priority: optional
           Depends: git-email, python3-keyring
+          Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
@@ -304,6 +310,65 @@ jobs:
 
           chmod a+x ./cred/DEBIAN/control
           chmod a+x ./cred/usr/bin/git-msgraph
+
+          dpkg-deb --build --root-owner-group -Zgzip cred
+          dpkg-name cred.deb
+
+          gh release download debian -D debian -R AdityaGarg8/git-credential-email
+          mv -v ./*.deb ./debian
+          cd debian
+          dpkg-scanpackages --multiversion . > Packages
+          gzip -k -f Packages
+
+          apt-ftparchive release . > Release
+          gpg --default-key "${GPG_SIGNING_EMAIL}" -abs -o - Release > Release.gpg
+          gpg --default-key "${GPG_SIGNING_EMAIL}" --clearsign -o - Release > InRelease
+          gh release upload debian ./* --clobber -R AdityaGarg8/git-credential-email
+        env:
+          GPG_SIGNING_EMAIL: ${{ secrets.GPG_SIGNING_EMAIL }}
+          GH_TOKEN: ${{ secrets.PAT }}
+  Release-Debian-ProtonMail:
+    needs: [Release-Debian-MSGraph]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@v4
+        with:
+          ref: v${{ github.event.inputs.version }}
+
+      - name: Configure GPG Key
+        run: |
+          echo -n "$GPG_SIGNING_KEY" | base64 -di | gpg --import
+        env:
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
+
+      - name: Release
+        id: publish
+        run: |
+          sudo apt update
+          sudo apt install -y wget git gpg apt-utils dpkg-dev
+          git checkout v${{ github.event.inputs.version }}
+          cd ${{ github.workspace }}
+          mkdir -p ${{ github.workspace }}/cred/DEBIAN
+          mkdir -p ${{ github.workspace }}/cred/usr/bin
+          cp ./git-protonmail ./cred/usr/bin
+
+          cat <<EOF  > ./cred/DEBIAN/control
+          Package: git-protonmail
+          Version: ${{ github.event.inputs.version }}
+          Section: utils
+          Priority: optional
+          Depends: git-email, python3-bcrypt, python3-cryptography, python3-keyring, python3-pgpy, python3-requests, python3-requests-toolbelt, python3-typing-extensions
+          Recommends: python3-pyqt6.qtwebengine
+          Suggests: python3-opencv, python3-numpy
+          Enhances: git-email
+          Architecture: all
+          Maintainer: Aditya Garg <gargaditya08@live.com>
+          Description: Git helper to use ProtonMail API to send emails
+          EOF
+
+          chmod a+x ./cred/DEBIAN/control
+          chmod a+x ./cred/usr/bin/git-protonmail
 
           dpkg-deb --build --root-owner-group -Zgzip cred
           dpkg-name cred.deb
@@ -344,6 +409,7 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
           Requires:       python-keyring
+          Suggests:       python-pyqt6-webengine
 
           %description
           Git credential helper for Microsoft Outlook accounts.
@@ -400,6 +466,7 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
           Requires:       python-keyring
+          Suggests:       python-pyqt6-webengine
 
           %description
           Git credential helper for Gmail accounts.
@@ -456,6 +523,7 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
           Requires:       python-keyring
+          Suggests:       python-pyqt6-webengine
 
           %description
           Git credential helper for Yahoo accounts.
@@ -512,6 +580,7 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
           Requires:       python-keyring
+          Suggests:       python-pyqt6-webengine
 
           %description
           Git credential helper for AOL accounts.
@@ -568,6 +637,7 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
           Requires:       python-keyring
+          Suggests:       python-pyqt6-webengine
 
           %description
           Git helper to use Microsoft Graph API instead of SMTP to send emails
@@ -601,6 +671,70 @@ jobs:
           curl -sS -X POST $COPR_WEBHOOK/git-msgraph
         env:
           COPR_WEBHOOK: ${{ secrets.COPR_WEBHOOK }}
+  Release-Fedora-ProtonMail:
+    needs: [Release-Fedora-MSGraph]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@v4
+
+      - name: Release
+        id: publish
+        run: |
+          cat <<EOF  > ./fedora/git-protonmail.spec
+          Name:           git-protonmail
+          Version:        ${{ github.event.inputs.version }}
+          Release:        1%{?dist}
+          Summary:        Git helper to use ProtonMail API to send emails
+
+          License:        GPL-3.0-only
+          URL:            https://github.com/AdityaGarg8/git-credential-email
+          Source0:        %{url}/archive/refs/tags/v${{ github.event.inputs.version }}.tar.gz
+
+          BuildArch:      noarch
+          Requires:       git-email
+          Requires:       python-bcrypt
+          Requires:       python-cryptography
+          Requires:       python-keyring
+          Requires:       python-pgpy
+          Requires:       python-requests
+          Requires:       python-requests-toolbelt
+          Requires:       python-typing-extensions
+          Recommends:     python-pyqt6-webengine
+          Suggests:       opencv
+
+          %description
+          Git helper to use ProtonMail API to send emails
+
+          %prep
+          %autosetup -n git-credential-email-${{ github.event.inputs.version }}
+
+          %build
+
+          %install
+          install -D -m0755 git-protonmail %{buildroot}%{_bindir}/git-protonmail
+
+          %files
+          %license LICENSE-GPL3
+          %doc README.md
+          %{_bindir}/git-protonmail
+          EOF
+
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git pull
+          git add .
+          git commit -m "Update Fedora package (ProtonMail API) to ${{ github.event.inputs.version }}" || true
+      - name: Push changes to the repo
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+      - name: "Trigger COPR webhook"
+        run: |
+          curl -sS -X POST $COPR_WEBHOOK/git-protonmail
+        env:
+          COPR_WEBHOOK: ${{ secrets.COPR_WEBHOOK }}
   Release-Homebrew:
     needs: [Release-GitHub]
     runs-on: ubuntu-latest
@@ -625,7 +759,7 @@ jobs:
           sed -i -E \
           -e 's|url "https://github.com/AdityaGarg8/git-credential-email/archive/refs/tags/v[0-9]+(\.[0-9]+)+\.tar\.gz"|url "https://github.com/AdityaGarg8/git-credential-email/archive/refs/tags/v${{ github.event.inputs.version }}.tar.gz"|' \
           -e '0,/sha256 "[a-f0-9]{64}"/s//sha256 "${{ env.sha }}"/' \
-          git-credential-outlook.rb git-credential-gmail.rb git-credential-yahoo.rb git-credential-aol.rb git-msgraph.rb
+          git-credential-outlook.rb git-credential-gmail.rb git-credential-yahoo.rb git-credential-aol.rb git-msgraph.rb git-protonmail.rb
           cd ..
           
       - name: Publish to repo
@@ -655,12 +789,14 @@ jobs:
           New-Item -ItemType Directory -Path yahoo
           New-Item -ItemType Directory -Path aol
           New-Item -ItemType Directory -Path msgraph
+          New-Item -ItemType Directory -Path protonmail
           pip install pyinstaller keyring
           Copy-Item -Path .\git-credential-outlook -Destination .\outlook
           Copy-Item -Path .\git-credential-gmail -Destination .\gmail
           Copy-Item -Path .\git-credential-yahoo -Destination .\yahoo
           Copy-Item -Path .\git-credential-aol -Destination .\aol
           Copy-Item -Path .\git-msgraph -Destination .\msgraph
+          Copy-Item -Path .\git-protonmail -Destination .\protonmail
           cd outlook
           pyinstaller git-credential-outlook --exclude-module PyQt6 --icon=NONE --contents-directory gco-resources
           cd ..
@@ -676,11 +812,19 @@ jobs:
           cd msgraph
           pyinstaller git-msgraph --exclude-module PyQt6 --icon=NONE --contents-directory gcm-resources
           cd ..
+
+          pip install opencv-python-headless
+
+          cd protonmail
+          pyinstaller git-protonmail --exclude-module PyQt6 --icon=NONE --contents-directory gcp-resources
+          cd ..
+
           Compress-Archive -Path .\outlook\dist\git-credential-outlook\* -DestinationPath git-credential-outlook_win64.zip
           Compress-Archive -Path .\gmail\dist\git-credential-gmail\* -DestinationPath git-credential-gmail_win64.zip
           Compress-Archive -Path .\yahoo\dist\git-credential-yahoo\* -DestinationPath git-credential-yahoo_win64.zip
           Compress-Archive -Path .\aol\dist\git-credential-aol\* -DestinationPath git-credential-aol_win64.zip
           Compress-Archive -Path .\msgraph\dist\git-msgraph\* -DestinationPath git-msgraph_win64.zip
+          Compress-Archive -Path .\protonmail\dist\git-protonmail\* -DestinationPath git-protonmail_win64.zip
       - name: Release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
