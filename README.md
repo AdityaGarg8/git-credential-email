@@ -236,7 +236,7 @@ You can install them by running:
 - For all platforms: `pip install PyQt6-WebEngine opencv-python`
 - If you have a headless system: `pip install opencv-python-headless` (PyQt6-WebEngine is a GUI app, so will not work in headless systems)
 - Ubuntu/Debian: `sudo apt-get install -y python3-pyqt6.qtwebengine python3-opencv`
-- Fedora: `sudo dnf install -y python-pyqt6-webengine opencv`
+- Fedora: `sudo dnf install -y python-pyqt6-webengine python-opencv`
 - macOS: `brew install pyqt@6 opencv`
 
 ## Usage
