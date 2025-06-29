@@ -1672,7 +1672,7 @@ if "--authenticate" in sys.argv:
 					i += 1
 					if i > 5:
 						raise CantSolveImageCaptcha(e)
-		except (CantSolveImageCaptcha, InvalidCaptcha, ImportError) as e:
+		except (CantSolveImageCaptcha, InvalidCaptcha, ImportError, AttributeError) as e:
 			try:
 				if isinstance(e, CantSolveImageCaptcha):
 					print("CAPTCHA auto solve failed. Attempting to open PyQt Web Browser to solve CAPTCHA.")
@@ -1680,16 +1680,16 @@ if "--authenticate" in sys.argv:
 				elif isinstance(e, InvalidCaptcha):
 					print("CAPTCHA auto solved an invalid CAPTCHA. Attempting to open PyQt Web Browser to solve CAPTCHA.")
 					print("If you want to try auto solve again, cancel the login (Ctrl+C) and try again.")
-				elif isinstance(e, ImportError):
+				elif isinstance(e, ImportError) or isinstance(e, AttributeError):
 					print("OpenCV and/or NumPy is not installed. Attempting to open PyQt Web Browser to solve CAPTCHA.")
 				proton = ProtonMail()
 				proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.PYQT))
-			except (InvalidCaptcha, ImportError) as e:
+			except (InvalidCaptcha, ImportError, AttributeError) as e:
 				try:
 					if isinstance(e, InvalidCaptcha):
 						print("CAPTCHA was not solved properly. Falling back to manual mode.")
 						print("If you want to try with PyQt web browser again, cancel the login (Ctrl+C) and try again.")
-					elif isinstance(e, ImportError):
+					elif isinstance(e, ImportError) or isinstance(e, AttributeError):
 						print("PyQt6-WebEngine is not installed. Falling back to manual mode.")
 						print("Alternatively cancel the process (Ctrl+c) and install PyQt6-WebEngine for easier CAPTCHA solving.")
 						print("You can also install OpenCV and NumPy for auto solving CAPTCHA.")
