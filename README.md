@@ -221,6 +221,24 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
   git protonmail --authenticate --alternate-auth
   ```
 
+#### Solving CAPTCHA while authenticating in ProtonMail
+
+There is a high chance that you will be asked to solve a CAPTCHA when you try to authenticate for ProtonMail. The on-screen instructions should be followed while solving the CAPTCHA.
+
+For an easier CAPTCHA solving experience, you can install either `PyQt6-WebEngine` or `OpenCV`.
+
+`PyQt6-WebEngine` will open a dedicated broswer window for solving CAPTCHA for you to solve and send the solved CAPTCHA to the credential helper. It occupies around 100-200MBs depending on your OS.
+
+`OpenCV` is more advanced and can automatically solve the CAPTCHA 99% times, without you needing to solve it at all! But it also occupies around 600MBs. An alternate is `opencv-python-headless` available using `pip` that is lighter, and is the best option for headless systems. It is not available if you are using apt/dnf/brew to install the helper. If you are using a [Windows binary](#windows), `opencv-python-headless` is bundled by default.
+
+You can install them by running:
+
+- For all platforms: `pip install PyQt6-WebEngine opencv-python`
+- If you have a headless system: `pip install opencv-python-headless` (PyQt6-WebEngine is a GUI app, so will not work in headless systems)
+- Ubuntu/Debian: `sudo apt-get install -y python3-pyqt6.qtwebengine python3-opencv`
+- Fedora: `sudo dnf install -y python-pyqt6-webengine opencv`
+- macOS: `brew install pyqt@6 opencv`
+
 ## Usage
 
 - Once authenticated, the refresh token gets saved in your keyring. You can run your helper to confirm the same. For example, for **Gmail** run `git credential-gmail`. It's output should now show an access token.
