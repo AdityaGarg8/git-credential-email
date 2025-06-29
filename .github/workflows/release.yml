@@ -701,7 +701,8 @@ jobs:
           Requires:       python-requests-toolbelt
           Requires:       python-typing-extensions
           Recommends:     python-pyqt6-webengine
-          Suggests:       opencv
+          Suggests:       python-opencv
+          Suggests:       python-numpy
 
           %description
           Git helper to use ProtonMail API to send emails
