@@ -814,6 +814,7 @@ jobs:
           cd ..
 
           pip install opencv-python-headless
+          pip install bcrypt cryptography keyring PGPy13 requests requests-toolbelt typing-extensions
 
           cd protonmail
           pyinstaller git-protonmail --exclude-module PyQt6 --icon=NONE --contents-directory gcp-resources
