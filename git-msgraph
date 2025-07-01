@@ -47,12 +47,11 @@ Examples:
 	sys.exit(0)
 
 import base64
-import json
 import keyring
 import os
+import requests
 import time
 import urllib.parse
-import urllib.request
 
 # https://github.com/mozilla/releases-comm-central/blob/master/mailnews/base/src/OAuth2Providers.sys.mjs
 ClientId_Thunderbird = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
@@ -109,10 +108,10 @@ def delete_client():
 def qr_encode(url):
 	headers = {'User-Agent': 'curl'}
 	url_qr = f"https://qrenco.de/{url}"
-	request = urllib.request.Request(url_qr, headers=headers)
 	try:
-		response = urllib.request.urlopen(request)
-		content = response.read().decode('utf-8')
+		response = requests.get(url_qr, headers=headers)
+		response.raise_for_status()
+		content = response.text
 		print(content)
 	except Exception:
 		# let's not interrupt the process if qrenco.de is down
@@ -153,11 +152,12 @@ def AuthorizeTokens(authorization_code):
 	request_url = AccountsUrl('common/oauth2/v2.0/token')
 
 	try:
-		response = urllib.request.urlopen(request_url, urllib.parse.urlencode(params).encode('utf-8')).read()
-		return json.loads(response)
-	except urllib.error.HTTPError as e:
-		print(f"HTTP Error {e.code}: {e.reason}")
-		print("Response Body:", e.read().decode())
+		response = requests.post(request_url, data=params)
+		response.raise_for_status()
+		return response.json()
+	except requests.exceptions.HTTPError:
+		print(f"HTTP Error {response.status_code}: {response.reason}")
+		print("Response Body:", response.text)
 		sys.exit("\nFailed to get refresh token due to an HTTP error.")
 	except Exception as e:
 		print(f"Unexpected error: {e}")
@@ -172,11 +172,12 @@ def RefreshToken(refresh_token):
 	request_url = AccountsUrl('common/oauth2/v2.0/token')
 
 	try:
-		response = urllib.request.urlopen(request_url, urllib.parse.urlencode(params).encode('utf-8')).read()
-		return json.loads(response)
-	except urllib.error.HTTPError as e:
-		print(f"HTTP Error {e.code}: {e.reason}")
-		print("Response Body:", e.read().decode())
+		response = requests.post(request_url, data=params)
+		response.raise_for_status()
+		return response.json()
+	except requests.exceptions.HTTPError:
+		print(f"HTTP Error {response.status_code}: {response.reason}")
+		print("Response Body:", response.text)
 		sys.exit("\nFailed to get access token due to an HTTP error.\nTry running `git msgraph --authenticate` to get a new refresh token.")
 	except Exception as e:
 		print(f"Unexpected error: {e}")
@@ -190,11 +191,11 @@ def DeviceFlowCode():
 	request_url = AccountsUrl('common/oauth2/v2.0/devicecode')
 
 	try:
-		response = urllib.request.urlopen(request_url, urllib.parse.urlencode(params).encode('utf-8')).read()
-		return json.loads(response)
-	except urllib.error.HTTPError as e:
-		error_body = e.read().decode()
-		return json.loads(error_body)
+		response = requests.post(request_url, data=params)
+		response.raise_for_status()
+		return response.json()
+	except requests.exceptions.HTTPError:
+		return response.text
 	except Exception as e:
 		return str(e)
 
@@ -208,16 +209,16 @@ def PollDeviceToken(device_code):
 
 	while True:
 		try:
-			response = urllib.request.urlopen(request_url, urllib.parse.urlencode(params).encode('utf-8')).read()
-			return json.loads(response)
-		except urllib.error.HTTPError as e:
-			error_body = e.read().decode()
-			error = json.loads(error_body)
+			response = requests.post(request_url, data=params)
+			response.raise_for_status()
+			return response.json()
+		except requests.exceptions.HTTPError:
+			error = response.json()
 			if error['error'] == 'authorization_pending':
 				time.sleep(5)
 			else:
-				print(f"HTTP Error {e.code}: {e.reason}")
-				print("Response Body:", e.read().decode())
+				print(f"HTTP Error {response.status_code}: {response.reason}")
+				print("Response Body:", response.text)
 				sys.exit("\nFailed to get refresh token due to an HTTP error.")
 		except Exception as e:
 			print(f"Unexpected error: {e}")
@@ -470,19 +471,13 @@ else:
 			"Content-Type": "text/plain"
 		}
 
-		req = urllib.request.Request(email_url, data=encoded_string.encode('utf-8'), headers=email_headers, method='POST')
-		try:
-			with urllib.request.urlopen(req) as response:
-				status_code = response.getcode()
-				response_text = response.read().decode('utf-8')
-		except urllib.error.HTTPError as e:
-			status_code = e.code
-			response_text = e.read().decode('utf-8')
+		email_response = requests.post(email_url, headers=email_headers, data=encoded_string)
 
-		if status_code == 202:
+		if email_response.status_code == 202:
 			print("Email sent successfully.")
 		else:
-			sys.exit(f"Failed to send email: {status_code}, {response_text}")
+			sys.exit(f"Failed to send email: {email_response.status_code}, {email_response.text}")
+
 	else:
 		print(access_token)
 

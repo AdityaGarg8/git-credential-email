@@ -68,7 +68,7 @@ jobs:
           Version: ${{ github.event.inputs.version }}
           Section: utils
           Priority: optional
-          Depends: git-email, python3-keyring
+          Depends: git-email, python3-keyring, python3-requests
           Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
@@ -126,7 +126,7 @@ jobs:
           Version: ${{ github.event.inputs.version }}
           Section: utils
           Priority: optional
-          Depends: git-email, python3-keyring
+          Depends: git-email, python3-keyring, python3-requests
           Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
@@ -184,7 +184,7 @@ jobs:
           Version: ${{ github.event.inputs.version }}
           Section: utils
           Priority: optional
-          Depends: git-email, python3-keyring
+          Depends: git-email, python3-keyring, python3-requests
           Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
@@ -242,7 +242,7 @@ jobs:
           Version: ${{ github.event.inputs.version }}
           Section: utils
           Priority: optional
-          Depends: git-email, python3-keyring
+          Depends: git-email, python3-keyring, python3-requests
           Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
@@ -300,7 +300,7 @@ jobs:
           Version: ${{ github.event.inputs.version }}
           Section: utils
           Priority: optional
-          Depends: git-email, python3-keyring
+          Depends: git-email, python3-keyring, python3-requests
           Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
@@ -409,6 +409,7 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
           Requires:       python-keyring
+          Requires:       python-requests
           Suggests:       python-pyqt6-webengine
 
           %description
@@ -466,6 +467,7 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
           Requires:       python-keyring
+          Requires:       python-requests
           Suggests:       python-pyqt6-webengine
 
           %description
@@ -523,6 +525,7 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
           Requires:       python-keyring
+          Requires:       python-requests
           Suggests:       python-pyqt6-webengine
 
           %description
@@ -580,6 +583,7 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
           Requires:       python-keyring
+          Requires:       python-requests
           Suggests:       python-pyqt6-webengine
 
           %description
@@ -637,6 +641,7 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
           Requires:       python-keyring
+          Requires:       python-requests
           Suggests:       python-pyqt6-webengine
 
           %description
@@ -791,7 +796,7 @@ jobs:
           New-Item -ItemType Directory -Path aol
           New-Item -ItemType Directory -Path msgraph
           New-Item -ItemType Directory -Path protonmail
-          pip install pyinstaller keyring
+          pip install pyinstaller keyring requests
           Copy-Item -Path .\git-credential-outlook -Destination .\outlook
           Copy-Item -Path .\git-credential-gmail -Destination .\gmail
           Copy-Item -Path .\git-credential-yahoo -Destination .\yahoo

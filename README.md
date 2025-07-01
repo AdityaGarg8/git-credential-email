@@ -30,10 +30,10 @@ It is a simple python script, based on https://github.com/google/gmail-oauth2-to
 
 - Make sure that the script is [located in the path](https://superuser.com/a/284351/62691) and [is executable](https://askubuntu.com/a/229592/18504).
 
-- Install the `keyring` pip module:
+- Install the `keyring` and `requests` pip module:
 
   ```bash
-  pip install keyring
+  pip install keyring requests
   ```
 
 - For **ProtonMail**, you also need to install some more modules by running:
