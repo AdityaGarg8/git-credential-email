@@ -256,6 +256,7 @@ You can install them by running:
 
   ```config
   [credential "smtp://smtp.gmail.com:587"]
+        helper = 
         helper = gmail
   [sendemail]
         smtpEncryption = tls
@@ -272,6 +273,7 @@ You can install them by running:
 
   ```config
   [credential "smtp://smtp.office365.com:587"]
+        helper = 
         helper = outlook
   [sendemail]
         smtpEncryption = tls
@@ -294,6 +296,7 @@ You can install them by running:
 
   ```config
   [credential "smtp://smtp.mail.yahoo.com:587"]
+        helper = 
         helper = yahoo
   [sendemail]
         smtpEncryption = tls
@@ -308,6 +311,7 @@ You can install them by running:
 
   ```config
   [credential "smtp://smtp.aol.com:587"]
+        helper = 
         helper = aol
   [sendemail]
         smtpEncryption = tls
