@@ -231,7 +231,9 @@ For an easier CAPTCHA solving experience, you can install either `PyQt6-WebEngin
 
 `OpenCV` is more advanced and can automatically solve the CAPTCHA 99% times, without you needing to solve it at all! But it also occupies around 600MBs. An alternate is `opencv-python-headless` available using `pip` that is lighter, and is the best option for headless systems. It is not available if you are using apt/dnf/brew to install the helper. If you are using a [Windows binary](#windows), `opencv-python-headless` is bundled by default.
 
-You can install them by running:
+I would recommend installing `PyQt6-WebEngine` if you are on a system with GUI and `OpenCV` for headless systems.
+
+You can install them by running (modify the commands accordingly if you want to install only one of them):
 
 - For all platforms: `pip install PyQt6-WebEngine opencv-python`
 - If you have a headless system: `pip install opencv-python-headless` (PyQt6-WebEngine is a GUI app, so will not work in headless systems)
