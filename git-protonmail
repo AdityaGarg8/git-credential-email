@@ -1511,6 +1511,7 @@ class ProtonMail:
 		for recipient in recipients_info:
 			package_type = 'text/plain'
 			address = recipient['address']
+			print(f"address being sent to is {address}")
 			fields.update({
 				f"Packages[{package_type}][Addresses][{address}][Type]": (None, str(recipient['type'])),
 				f"Packages[{package_type}][Addresses][{address}][Signature]": (None, '1'),
