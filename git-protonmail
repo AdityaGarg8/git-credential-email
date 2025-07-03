@@ -1490,6 +1490,7 @@ class ProtonMail:
 
 		for recipient_type in recipients_type:
 			is_send_to_proton = recipient_type == 1
+			print(f"recipient type is {recipient_type}")
 
 			prepared_body = message.body
 
