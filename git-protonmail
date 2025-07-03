@@ -1483,7 +1483,7 @@ class ProtonMail:
 		session_key = None
 		recipients_type = set(recipient['type'] for recipient in recipients_info)
 		fields = {
-			"DelaySeconds": (None, '10'),
+			"DelaySeconds": (None, '5'),
 		}
 		if delivery_time:
 			fields['DeliveryTime'] = (None, str(delivery_time))
@@ -1513,7 +1513,7 @@ class ProtonMail:
 			address = recipient['address']
 			fields.update({
 				f"Packages[{package_type}][Addresses][{address}][Type]": (None, str(recipient['type'])),
-				f"Packages[{package_type}][Addresses][{address}][Signature]": (None, '0'),
+				f"Packages[{package_type}][Addresses][{address}][Signature]": (None, '1'),
 			})
 			if recipient['public_key']:  # proton
 				key_packet = b64encode(self.pgp.encrypt_session_key(session_key, recipient['public_key'])).decode()
