@@ -119,6 +119,10 @@ git credential-gmail --delete-client
 
 ## Authenticating with your email provider
 
+Now we need to authenticate with our email provider to get the necessary tokens to authenticate using OAuth2.0.
+
+**Note: Except for `git-msgraph` and `git-protonmail`, make sure you have atleast version 2.1800 of perl's [Authen::SASL](https://metacpan.org/dist/Authen-SASL) library in order to be able to use OAuth2.0. You can run `cpan install Authen::SASL` to install the latest version of this library. `git-msgraph` and `git-protonmail` do not require this library.**
+
 ### Gmail
 
 - First of all we need to authenticate with our Gmail credentials and get a refresh token. For that run:
@@ -138,6 +142,8 @@ git credential-gmail --delete-client
 #### Using the SMTP server
 
 Microsoft Outlook accounts can send emails using two methods. First is their SMTP server, which is similar to what most email providers use. Second is Microsoft Graph API. These instructions are in case you want to use the SMTP server.
+
+**Note: It is recommended to use atleast git 2.50 for threads to properly work with Outlook's SMTP server. If you are using an older version of git, then its better to use [Microsoft Graph API](#using-microsoft-graph-api) using `git-msgraph` for threads to work properly.**
 
 - Similar to Gmail, we need to get a refresh token for Outlook as well. For that run:
 
@@ -331,8 +337,6 @@ You can install them by running (modify the commands accordingly if you want to 
         sendmailCmd = git-protonmail
         from = someone@proton.me # Replace this with your email address. If you have multiple addresses (seen in paid accounts), use the address you want to send from.
   ```
-
-  **Note: Make sure you have atleast version 2.1800 of perl's [Authen::SASL](https://metacpan.org/dist/Authen-SASL) library in order to be able to use XOAUTH2 and OAUTHBEARER. You can run `cpan install Authen::SASL` to install the latest version of this library.**
 
 ## Deleting the stored authentication details
 
