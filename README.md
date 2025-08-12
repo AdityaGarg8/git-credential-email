@@ -16,7 +16,7 @@ They can be used with `git send-email`, especially when Outlook no longer suppor
 It is a simple python script, based on https://github.com/google/gmail-oauth2-tools/blob/master/python/oauth2.py and https://github.com/opulentfox-29/protonmail-api-client. It does the following:
 
 - Uses an OAuth2.0 `client_id` and `client_secret` to authenticate with Microsoft/Google/Yahoo/AOL and retrieve a refresh token.
-- As per demand, it uses the refresh token to generate OAuth2 access tokens as and when required.
+- As per demand, it uses the refresh token to generate OAuth2.0 access tokens as and when required.
 - The refresh token and access token is stored securely using the `keyring` module of pip. More information about this can be read from https://pypi.org/project/keyring/.
 - Everytime the helper is called, it passes the stored access token to git. If the access token has expired, the helper first refreshes it automatically and passes the new access token.
 - For APIs like Microsoft Graph and ProtonMail, it exploits the sendmail-like command ability of `git send-email`
