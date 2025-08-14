@@ -13,7 +13,7 @@ They can be used with `git send-email`, especially when Outlook no longer suppor
 
 ## How does this work?
 
-It is a simple python script, based on https://github.com/google/gmail-oauth2-tools/blob/master/python/oauth2.py and https://github.com/opulentfox-29/protonmail-api-client. It does the following:
+It is a simple python script, based on <https://github.com/google/gmail-oauth2-tools/blob/master/python/oauth2.py> and <https://github.com/opulentfox-29/protonmail-api-client>. It does the following:
 
 - Uses an OAuth2.0 `client_id` and `client_secret` to authenticate with Microsoft/Google/Yahoo/AOL and retrieve a refresh token.
 - As per demand, it uses the refresh token to generate OAuth2.0 access tokens as and when required.
@@ -366,9 +366,9 @@ In case authentication fails:
 
 ## References:
 
-- https://github.com/google/gmail-oauth2-tools/blob/master/python/oauth2.py (As a skeleton for all helpers and also Gmail support).
-- https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow (For Outlook).
-- https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code (For adding device flow support to Outlook).
-- https://learn.microsoft.com/en-us/graph/api/user-sendmail (For Microsoft Graph API)
-- https://developer.yahoo.com/oauth2/guide/flows_authcode/ (For Yahoo).
-- https://github.com/opulentfox-29/protonmail-api-client (For ProtonMail).
+- <https://github.com/google/gmail-oauth2-tools/blob/master/python/oauth2.py> (As a skeleton for all helpers and also Gmail support).
+- <https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow> (For Outlook).
+- <https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code> (For adding device flow support to Outlook).
+- <https://learn.microsoft.com/en-us/graph/api/user-sendmail> (For Microsoft Graph API)
+- <https://developer.yahoo.com/oauth2/guide/flows_authcode> (For Yahoo).
+- <https://github.com/opulentfox-29/protonmail-api-client> (For ProtonMail).
