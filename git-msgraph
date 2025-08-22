@@ -461,7 +461,6 @@ else:
 			raw_message['Bcc'] = ', '.join(bcc)
 
 		message = raw_message.as_string()
-		message = message.replace("\n", "\r\n")
 
 		message_bytes = message.encode("utf-8")
 		encoded_string = base64.b64encode(message_bytes).decode("utf-8")
