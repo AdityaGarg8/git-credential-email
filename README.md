@@ -73,7 +73,7 @@ Run the following to add the copr repo and install the helpers:
 
 ```bash
 sudo zypper addrepo https://copr.fedorainfracloud.org/coprs/adityagarg8/git-credential-email/repo/opensuse-tumbleweed/adityagarg8-git-credential-email-opensuse-tumbleweed.repo
-sudo zypper install -y git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
+sudo zypper install git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
 ```
 
 (Thanks to [@IsaacOscar](https://github.com/IsaacOscar) for adding support for OpenSUSE Tumbleweed!)
