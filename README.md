@@ -185,6 +185,7 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
   git msgraph --authenticate --device
   ```
 
+**Note:** When sending/cc'ing an email to yourself, Microsoft Graph may incorrectly re-encode your message when you receive it. However, the email stored in your *sent* folder and received by *other* email addresses should be correct.
 ### Yahoo
 
 - Yahoo is quite similar to Gmail. We need to authenticate with our Yahoo credentials and get a refresh token. For that run:
