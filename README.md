@@ -196,7 +196,7 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
   git msgraph --authenticate --device
   ```
 
-**Note:** When sending/cc'ing an email to yourself, Microsoft Graph may incorrectly re-encode your message when you receive it. However, the email stored in your *Sent* folder and received by *other email addresses* should be correct.
+**Note:** When sending/cc'ing an email to yourself, Microsoft Graph may incorrectly re-encode your message when you receive it, in case you are using special characters like non breaking space. However, the email stored in your *Sent* folder and received by *other email addresses* should be correct, so you do not need to worry at all!
 
 ### Yahoo
 
