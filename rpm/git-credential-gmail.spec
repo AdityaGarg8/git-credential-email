@@ -1,23 +1,32 @@
 Name:           git-credential-gmail
-Version:        5.3.1
+Version:        5.3.2
 Release:        1%{?dist}
 Summary:        Git credential helper for Gmail accounts
 
 License:        Apache-2.0
 URL:            https://github.com/AdityaGarg8/git-credential-email
-Source0:        %{url}/archive/refs/tags/v5.3.1.tar.gz
+Source0:        %{url}/archive/refs/tags/v5.3.2.tar.gz
 
 BuildArch:      noarch
 Requires:       git-email
+
+%if 0%{?fedora}%{?rhel}
 Requires:       python-keyring
 Requires:       python-requests
 Suggests:       python-pyqt6-webengine
+%elif 0%{?suse_version}%{?sle_version}
+Requires:       python313-keyring
+Requires:       python313-requests
+Suggests:       python313-PyQt6-WebEngine
+%else
+%{error: unsupported distribution}
+%endif
 
 %description
 Git credential helper for Gmail accounts.
 
 %prep
-%autosetup -n git-credential-email-5.3.1
+%autosetup -n git-credential-email-5.3.2
 
 %build
 
