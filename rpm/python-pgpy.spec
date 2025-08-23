@@ -23,10 +23,10 @@ BuildRequires:  python3dist(setuptools)
 BuildRequires:  python3dist(pytest)
 %elif 0%{?suse_version}
 BuildRequires:  python313-devel
-BuildRequires:  python3.13dist(cryptography)
-BuildRequires:  python3.13dist(pyasn1)
-BuildRequires:  python3.13dist(setuptools)
-BuildRequires:  python3.13dist(pytest)
+BuildRequires:  python313-cryptography
+BuildRequires:  python313-pyasn1
+BuildRequires:  python313-setuptools
+BuildRequires:  python313-pytest
 %else
 %{error: unsupported distribution}
 %endif
