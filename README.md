@@ -76,6 +76,8 @@ sudo zypper addrepo https://copr.fedorainfracloud.org/coprs/adityagarg8/git-cred
 sudo zypper install -y git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
 ```
 
+(Thanks to [@IsaacOscar](https://github.com/IsaacOscar) for adding support for OpenSUSE Tumbleweed!)
+
 ### macOS
 
 [Install Homebrew](https://brew.sh/). Then run the following to add the brew tap and install the helpers:
