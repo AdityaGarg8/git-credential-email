@@ -409,11 +409,11 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
 
-          %if 0%{?fedora}
+          %if 0%{?fedora}%{?rhel}
           Requires:       python-keyring
           Requires:       python-requests
           Suggests:       python-pyqt6-webengine
-          %elif 0%{?suse_version}
+          %elif 0%{?suse_version}%{?sle_version}
           Requires:       python313-keyring
           Requires:       python313-requests
           Suggests:       python313-PyQt6-WebEngine
@@ -476,11 +476,11 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
 
-          %if 0%{?fedora}
+          %if 0%{?fedora}%{?rhel}
           Requires:       python-keyring
           Requires:       python-requests
           Suggests:       python-pyqt6-webengine
-          %elif 0%{?suse_version}
+          %elif 0%{?suse_version}%{?sle_version}
           Requires:       python313-keyring
           Requires:       python313-requests
           Suggests:       python313-PyQt6-WebEngine
@@ -543,11 +543,11 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
 
-          %if 0%{?fedora}
+          %if 0%{?fedora}%{?rhel}
           Requires:       python-keyring
           Requires:       python-requests
           Suggests:       python-pyqt6-webengine
-          %elif 0%{?suse_version}
+          %elif 0%{?suse_version}%{?sle_version}
           Requires:       python313-keyring
           Requires:       python313-requests
           Suggests:       python313-PyQt6-WebEngine
@@ -610,11 +610,11 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
 
-          %if 0%{?fedora}
+          %if 0%{?fedora}%{?rhel}
           Requires:       python-keyring
           Requires:       python-requests
           Suggests:       python-pyqt6-webengine
-          %elif 0%{?suse_version}
+          %elif 0%{?suse_version}%{?sle_version}
           Requires:       python313-keyring
           Requires:       python313-requests
           Suggests:       python313-PyQt6-WebEngine
@@ -677,11 +677,11 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
 
-          %if 0%{?fedora}
+          %if 0%{?fedora}%{?rhel}
           Requires:       python-keyring
           Requires:       python-requests
           Suggests:       python-pyqt6-webengine
-          %elif 0%{?suse_version}
+          %elif 0%{?suse_version}%{?sle_version}
           Requires:       python313-keyring
           Requires:       python313-requests
           Suggests:       python313-PyQt6-WebEngine
@@ -744,7 +744,7 @@ jobs:
           BuildArch:      noarch
           Requires:       git-email
 
-          %if 0%{?fedora}
+          %if 0%{?fedora}%{?rhel}
           Requires:       python-bcrypt
           Requires:       python-cryptography
           Requires:       python-keyring
@@ -755,7 +755,7 @@ jobs:
           Recommends:     python-pyqt6-webengine
           Suggests:       python-opencv
           Suggests:       python-numpy
-          %elif 0%{?suse_version}
+          %elif 0%{?suse_version}%{?sle_version}
           Requires:       python313-bcrypt
           Requires:       python313-cryptography
           Requires:       python313-keyring
