@@ -67,6 +67,15 @@ sudo dnf copr enable -y adityagarg8/git-credential-email
 sudo dnf install -y git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
 ```
 
+#### OpenSUSE Tumbleweed
+
+Run the following to add the copr repo and install the helpers:
+
+```bash
+sudo zypper addrepo https://copr.fedorainfracloud.org/coprs/adityagarg8/git-credential-email/repo/opensuse-tumbleweed/adityagarg8-git-credential-email-opensuse-tumbleweed.repo
+sudo zypper install -y git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
+```
+
 ### macOS
 
 [Install Homebrew](https://brew.sh/). Then run the following to add the brew tap and install the helpers:
