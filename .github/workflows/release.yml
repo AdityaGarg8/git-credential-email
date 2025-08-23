@@ -759,7 +759,7 @@ jobs:
           Requires:       python313-bcrypt
           Requires:       python313-cryptography
           Requires:       python313-keyring
-          Requires:       python3.13dist(pgpy13)
+          Requires:       python3-pgpy
           Requires:       python313-requests
           Requires:       python313-requests-toolbelt
           Requires:       python313-typing-extensions
@@ -768,7 +768,7 @@ jobs:
           Suggests:       python313-numpy
           %else
           %{error: unsupported distribution}
-          %end
+          %endif
           
           %description
           Git helper to use ProtonMail API to send emails
