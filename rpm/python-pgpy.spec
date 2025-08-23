@@ -7,7 +7,7 @@
 
 Name:           python-%{package_name}
 Version:        %{pypi_version}
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Pretty Good Privacy for Python
 
 License:        BSD-3-Clause
@@ -63,5 +63,5 @@ PGPy: Pretty Good Privacy for Python :target:
 %{python3_sitelib}/*
 
 %changelog
-* Sat Jun 28 2025 Aditya Garg <gargaditya08@live.com> - 0.6.1rc1-1
-- Initial package.
+* Sat Aug 23 2025 Aditya Garg <gargaditya08@live.com> - 0.6.1rc1-2
+- Add OpenSUSE Tumbleweed support
