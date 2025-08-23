@@ -7,7 +7,7 @@
 
 Name:           python-%{package_name}
 Version:        %{pypi_version}
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Pretty Good Privacy for Python
 
 License:        BSD-3-Clause
@@ -27,6 +27,16 @@ BuildRequires:  python3-cryptography
 BuildRequires:  python3-pyasn1
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-pytest
+%else
+%{error: unsupported distribution}
+%endif
+
+%if 0%{?fedora}%{?rhel}
+Requires:       python-cryptography
+Requires:       python-pyasn1
+%elif 0%{?suse_version}%{?sle_version}
+Requires:       python3-cryptography
+Requires:       python3-pyasn1
 %else
 %{error: unsupported distribution}
 %endif
@@ -63,5 +73,5 @@ PGPy: Pretty Good Privacy for Python :target:
 %{python3_sitelib}/*
 
 %changelog
-* Sat Aug 23 2025 Aditya Garg <gargaditya08@live.com> - 0.6.1rc1-2
-- Add OpenSUSE Tumbleweed support
+* Sat Aug 23 2025 Aditya Garg <gargaditya08@live.com> - 0.6.1rc1-3
+- Fix missing dependencies
