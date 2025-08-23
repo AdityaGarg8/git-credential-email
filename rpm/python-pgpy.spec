@@ -15,13 +15,13 @@ URL:            https://github.com/memory/PGPy
 Source0:        https://files.pythonhosted.org/packages/27/4a/49f87efd9c320d25b2edda4d9bda520607fbc12338cd1030468d830f29bb/pgpy13-0.6.1rc1.tar.gz
 BuildArch:      noarch
 
-%if 0%{?fedora}
+%if 0%{?fedora}%{?rhel}
 BuildRequires:  python3-devel
 BuildRequires:  python3dist(cryptography)
 BuildRequires:  python3dist(pyasn1)
 BuildRequires:  python3dist(setuptools)
 BuildRequires:  python3dist(pytest)
-%elif 0%{?suse_version}
+%elif 0%{?suse_version}%{?sle_version}
 BuildRequires:  python313-devel
 BuildRequires:  python313-cryptography
 BuildRequires:  python313-pyasn1
@@ -37,9 +37,9 @@ PGPy: Pretty Good Privacy for Python :target:
 %package -n     python3-%{package_name}
 Summary:        %{summary}
 
-%if 0%{?fedora}
+%if 0%{?fedora}%{?rhel}
 %{?python_provide:%python_provide python3-%{package_name}}
-%elif 0%{?suse_version}
+%elif 0%{?suse_version}%{?sle_version}
 %{?python_provide:%python_provide python313-%{package_name}}
 %else
 %{error: unsupported distribution}
