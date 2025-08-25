@@ -457,7 +457,7 @@ jobs:
           branch: ${{ github.ref }}
       - name: "Trigger COPR webhook"
         run: |
-          for i in git-credential-outlook git-credential-gmail git-credential-yahoo git-msgraph git-protonmail
+          for i in git-credential-outlook git-credential-gmail git-credential-yahoo git-credential-aol git-msgraph git-protonmail
           do
             curl -sS -X POST $COPR_WEBHOOK/$i
           done
