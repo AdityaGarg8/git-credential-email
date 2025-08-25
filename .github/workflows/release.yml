@@ -37,7 +37,7 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  Release-Debian-Outlook:
+  Release-DEB:
     needs: [Release-GitHub]
     runs-on: ubuntu-latest
     steps:
@@ -59,11 +59,15 @@ jobs:
           sudo apt install -y wget git gpg apt-utils dpkg-dev
           git checkout v${{ github.event.inputs.version }}
           cd ${{ github.workspace }}
-          mkdir -p ${{ github.workspace }}/cred/DEBIAN
-          mkdir -p ${{ github.workspace }}/cred/usr/bin
-          cp ./git-credential-outlook ./cred/usr/bin
 
-          cat <<EOF  > ./cred/DEBIAN/control
+          for i in git-credential-outlook git-credential-gmail git-credential-yahoo git-credential-aol git-msgraph git-protonmail
+          do
+            mkdir -p ${{ github.workspace }}/cred-$i/DEBIAN
+            mkdir -p ${{ github.workspace }}/cred-$i/usr/bin
+            cp ./$i ./cred-$i/usr/bin
+          done
+
+          cat <<EOF  > ./cred-git-credential-outlook/DEBIAN/control
           Package: git-credential-outlook
           Version: ${{ github.event.inputs.version }}
           Section: utils
@@ -76,52 +80,7 @@ jobs:
           Description: Git credential helper for Microsoft Outlook accounts
           EOF
 
-          chmod a+x ./cred/DEBIAN/control
-          chmod a+x ./cred/usr/bin/git-credential-outlook
-
-          dpkg-deb --build --root-owner-group -Zgzip cred
-          dpkg-name cred.deb
-
-          gh release download debian -D debian -R AdityaGarg8/git-credential-email
-          mv -v ./*.deb ./debian
-          cd debian
-          dpkg-scanpackages --multiversion . > Packages
-          gzip -k -f Packages
-
-          apt-ftparchive release . > Release
-          gpg --default-key "${GPG_SIGNING_EMAIL}" -abs -o - Release > Release.gpg
-          gpg --default-key "${GPG_SIGNING_EMAIL}" --clearsign -o - Release > InRelease
-          gh release upload debian ./* --clobber -R AdityaGarg8/git-credential-email
-        env:
-          GPG_SIGNING_EMAIL: ${{ secrets.GPG_SIGNING_EMAIL }}
-          GH_TOKEN: ${{ secrets.PAT }}
-  Release-Debian-Gmail:
-    needs: [Release-Debian-Outlook]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v5
-        with:
-          ref: v${{ github.event.inputs.version }}
-
-      - name: Configure GPG Key
-        run: |
-          echo -n "$GPG_SIGNING_KEY" | base64 -di | gpg --import
-        env:
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-
-      - name: Release
-        id: publish
-        run: |
-          sudo apt update
-          sudo apt install -y wget git gpg apt-utils dpkg-dev
-          git checkout v${{ github.event.inputs.version }}
-          cd ${{ github.workspace }}
-          mkdir -p ${{ github.workspace }}/cred/DEBIAN
-          mkdir -p ${{ github.workspace }}/cred/usr/bin
-          cp ./git-credential-gmail ./cred/usr/bin
-
-          cat <<EOF  > ./cred/DEBIAN/control
+          cat <<EOF  > ./cred-git-credential-gmail/DEBIAN/control
           Package: git-credential-gmail
           Version: ${{ github.event.inputs.version }}
           Section: utils
@@ -134,52 +93,7 @@ jobs:
           Description: Git credential helper for Gmail accounts
           EOF
 
-          chmod a+x ./cred/DEBIAN/control
-          chmod a+x ./cred/usr/bin/git-credential-gmail
-
-          dpkg-deb --build --root-owner-group -Zgzip cred
-          dpkg-name cred.deb
-
-          gh release download debian -D debian -R AdityaGarg8/git-credential-email
-          mv -v ./*.deb ./debian
-          cd debian
-          dpkg-scanpackages --multiversion . > Packages
-          gzip -k -f Packages
-
-          apt-ftparchive release . > Release
-          gpg --default-key "${GPG_SIGNING_EMAIL}" -abs -o - Release > Release.gpg
-          gpg --default-key "${GPG_SIGNING_EMAIL}" --clearsign -o - Release > InRelease
-          gh release upload debian ./* --clobber -R AdityaGarg8/git-credential-email
-        env:
-          GPG_SIGNING_EMAIL: ${{ secrets.GPG_SIGNING_EMAIL }}
-          GH_TOKEN: ${{ secrets.PAT }}
-  Release-Debian-Yahoo:
-    needs: [Release-Debian-Gmail]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v5
-        with:
-          ref: v${{ github.event.inputs.version }}
-
-      - name: Configure GPG Key
-        run: |
-          echo -n "$GPG_SIGNING_KEY" | base64 -di | gpg --import
-        env:
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-
-      - name: Release
-        id: publish
-        run: |
-          sudo apt update
-          sudo apt install -y wget git gpg apt-utils dpkg-dev
-          git checkout v${{ github.event.inputs.version }}
-          cd ${{ github.workspace }}
-          mkdir -p ${{ github.workspace }}/cred/DEBIAN
-          mkdir -p ${{ github.workspace }}/cred/usr/bin
-          cp ./git-credential-yahoo ./cred/usr/bin
-
-          cat <<EOF  > ./cred/DEBIAN/control
+          cat <<EOF  > ./cred-git-credential-yahoo/DEBIAN/control
           Package: git-credential-yahoo
           Version: ${{ github.event.inputs.version }}
           Section: utils
@@ -192,52 +106,7 @@ jobs:
           Description: Git credential helper for Yahoo accounts
           EOF
 
-          chmod a+x ./cred/DEBIAN/control
-          chmod a+x ./cred/usr/bin/git-credential-yahoo
-
-          dpkg-deb --build --root-owner-group -Zgzip cred
-          dpkg-name cred.deb
-
-          gh release download debian -D debian -R AdityaGarg8/git-credential-email
-          mv -v ./*.deb ./debian
-          cd debian
-          dpkg-scanpackages --multiversion . > Packages
-          gzip -k -f Packages
-
-          apt-ftparchive release . > Release
-          gpg --default-key "${GPG_SIGNING_EMAIL}" -abs -o - Release > Release.gpg
-          gpg --default-key "${GPG_SIGNING_EMAIL}" --clearsign -o - Release > InRelease
-          gh release upload debian ./* --clobber -R AdityaGarg8/git-credential-email
-        env:
-          GPG_SIGNING_EMAIL: ${{ secrets.GPG_SIGNING_EMAIL }}
-          GH_TOKEN: ${{ secrets.PAT }}
-  Release-Debian-AOL:
-    needs: [Release-Debian-Yahoo]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v5
-        with:
-          ref: v${{ github.event.inputs.version }}
-
-      - name: Configure GPG Key
-        run: |
-          echo -n "$GPG_SIGNING_KEY" | base64 -di | gpg --import
-        env:
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-
-      - name: Release
-        id: publish
-        run: |
-          sudo apt update
-          sudo apt install -y wget git gpg apt-utils dpkg-dev
-          git checkout v${{ github.event.inputs.version }}
-          cd ${{ github.workspace }}
-          mkdir -p ${{ github.workspace }}/cred/DEBIAN
-          mkdir -p ${{ github.workspace }}/cred/usr/bin
-          cp ./git-credential-aol ./cred/usr/bin
-
-          cat <<EOF  > ./cred/DEBIAN/control
+          cat <<EOF  > ./cred-git-credential-aol/DEBIAN/control
           Package: git-credential-aol
           Version: ${{ github.event.inputs.version }}
           Section: utils
@@ -250,52 +119,7 @@ jobs:
           Description: Git credential helper for AOL accounts
           EOF
 
-          chmod a+x ./cred/DEBIAN/control
-          chmod a+x ./cred/usr/bin/git-credential-aol
-
-          dpkg-deb --build --root-owner-group -Zgzip cred
-          dpkg-name cred.deb
-
-          gh release download debian -D debian -R AdityaGarg8/git-credential-email
-          mv -v ./*.deb ./debian
-          cd debian
-          dpkg-scanpackages --multiversion . > Packages
-          gzip -k -f Packages
-
-          apt-ftparchive release . > Release
-          gpg --default-key "${GPG_SIGNING_EMAIL}" -abs -o - Release > Release.gpg
-          gpg --default-key "${GPG_SIGNING_EMAIL}" --clearsign -o - Release > InRelease
-          gh release upload debian ./* --clobber -R AdityaGarg8/git-credential-email
-        env:
-          GPG_SIGNING_EMAIL: ${{ secrets.GPG_SIGNING_EMAIL }}
-          GH_TOKEN: ${{ secrets.PAT }}
-  Release-Debian-MSGraph:
-    needs: [Release-Debian-AOL]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v5
-        with:
-          ref: v${{ github.event.inputs.version }}
-
-      - name: Configure GPG Key
-        run: |
-          echo -n "$GPG_SIGNING_KEY" | base64 -di | gpg --import
-        env:
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-
-      - name: Release
-        id: publish
-        run: |
-          sudo apt update
-          sudo apt install -y wget git gpg apt-utils dpkg-dev
-          git checkout v${{ github.event.inputs.version }}
-          cd ${{ github.workspace }}
-          mkdir -p ${{ github.workspace }}/cred/DEBIAN
-          mkdir -p ${{ github.workspace }}/cred/usr/bin
-          cp ./git-msgraph ./cred/usr/bin
-
-          cat <<EOF  > ./cred/DEBIAN/control
+          cat <<EOF  > ./cred-git-msgraph/DEBIAN/control
           Package: git-msgraph
           Version: ${{ github.event.inputs.version }}
           Section: utils
@@ -308,52 +132,7 @@ jobs:
           Description: Git helper to use Microsoft Graph API instead of SMTP to send emails
           EOF
 
-          chmod a+x ./cred/DEBIAN/control
-          chmod a+x ./cred/usr/bin/git-msgraph
-
-          dpkg-deb --build --root-owner-group -Zgzip cred
-          dpkg-name cred.deb
-
-          gh release download debian -D debian -R AdityaGarg8/git-credential-email
-          mv -v ./*.deb ./debian
-          cd debian
-          dpkg-scanpackages --multiversion . > Packages
-          gzip -k -f Packages
-
-          apt-ftparchive release . > Release
-          gpg --default-key "${GPG_SIGNING_EMAIL}" -abs -o - Release > Release.gpg
-          gpg --default-key "${GPG_SIGNING_EMAIL}" --clearsign -o - Release > InRelease
-          gh release upload debian ./* --clobber -R AdityaGarg8/git-credential-email
-        env:
-          GPG_SIGNING_EMAIL: ${{ secrets.GPG_SIGNING_EMAIL }}
-          GH_TOKEN: ${{ secrets.PAT }}
-  Release-Debian-ProtonMail:
-    needs: [Release-Debian-MSGraph]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v5
-        with:
-          ref: v${{ github.event.inputs.version }}
-
-      - name: Configure GPG Key
-        run: |
-          echo -n "$GPG_SIGNING_KEY" | base64 -di | gpg --import
-        env:
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-
-      - name: Release
-        id: publish
-        run: |
-          sudo apt update
-          sudo apt install -y wget git gpg apt-utils dpkg-dev
-          git checkout v${{ github.event.inputs.version }}
-          cd ${{ github.workspace }}
-          mkdir -p ${{ github.workspace }}/cred/DEBIAN
-          mkdir -p ${{ github.workspace }}/cred/usr/bin
-          cp ./git-protonmail ./cred/usr/bin
-
-          cat <<EOF  > ./cred/DEBIAN/control
+          cat <<EOF  > ./cred-git-protonmail/DEBIAN/control
           Package: git-protonmail
           Version: ${{ github.event.inputs.version }}
           Section: utils
@@ -367,11 +146,13 @@ jobs:
           Description: Git helper to use ProtonMail API to send emails
           EOF
 
-          chmod a+x ./cred/DEBIAN/control
-          chmod a+x ./cred/usr/bin/git-protonmail
-
-          dpkg-deb --build --root-owner-group -Zgzip cred
-          dpkg-name cred.deb
+          for i in git-credential-outlook git-credential-gmail git-credential-yahoo git-credential-aol git-msgraph git-protonmail
+          do
+            chmod a+x ./cred-$i/DEBIAN/control
+            chmod a+x ./cred-$i/usr/bin/$i
+            dpkg-deb --build --root-owner-group -Zgzip cred-$i
+            dpkg-name cred-$i.deb
+          done
 
           gh release download debian -D debian -R AdityaGarg8/git-credential-email
           mv -v ./*.deb ./debian
@@ -386,7 +167,7 @@ jobs:
         env:
           GPG_SIGNING_EMAIL: ${{ secrets.GPG_SIGNING_EMAIL }}
           GH_TOKEN: ${{ secrets.PAT }}
-  Release-RPM-Outlook:
+  Release-RPM:
     needs: [Release-GitHub]
     runs-on: ubuntu-latest
     steps:
@@ -438,31 +219,6 @@ jobs:
           %{_bindir}/git-credential-outlook
           EOF
 
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git pull
-          git add .
-          git commit -m "Update RPM package (Outlook) to ${{ github.event.inputs.version }}" || true
-      - name: Push changes to the repo
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
-      - name: "Trigger COPR webhook"
-        run: |
-          curl -sS -X POST $COPR_WEBHOOK/git-credential-outlook
-        env:
-          COPR_WEBHOOK: ${{ secrets.COPR_WEBHOOK }}
-  Release-RPM-Gmail:
-    needs: [Release-RPM-Outlook]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v5
-
-      - name: Release
-        id: publish
-        run: |
           cat <<EOF  > ./rpm/git-credential-gmail.spec
           Name:           git-credential-gmail
           Version:        ${{ github.event.inputs.version }}
@@ -505,31 +261,6 @@ jobs:
           %{_bindir}/git-credential-gmail
           EOF
 
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git pull
-          git add .
-          git commit -m "Update RPM package (Gmail) to ${{ github.event.inputs.version }}" || true
-      - name: Push changes to the repo
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
-      - name: "Trigger COPR webhook"
-        run: |
-          curl -sS -X POST $COPR_WEBHOOK/git-credential-gmail
-        env:
-          COPR_WEBHOOK: ${{ secrets.COPR_WEBHOOK }}
-  Release-RPM-Yahoo:
-    needs: [Release-RPM-Gmail]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v5
-
-      - name: Release
-        id: publish
-        run: |
           cat <<EOF  > ./rpm/git-credential-yahoo.spec
           Name:           git-credential-yahoo
           Version:        ${{ github.event.inputs.version }}
@@ -572,31 +303,6 @@ jobs:
           %{_bindir}/git-credential-yahoo
           EOF
 
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git pull
-          git add .
-          git commit -m "Update RPM package (Yahoo) to ${{ github.event.inputs.version }}" || true
-      - name: Push changes to the repo
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
-      - name: "Trigger COPR webhook"
-        run: |
-          curl -sS -X POST $COPR_WEBHOOK/git-credential-yahoo
-        env:
-          COPR_WEBHOOK: ${{ secrets.COPR_WEBHOOK }}
-  Release-RPM-AOL:
-    needs: [Release-RPM-Yahoo]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v5
-
-      - name: Release
-        id: publish
-        run: |
           cat <<EOF  > ./rpm/git-credential-aol.spec
           Name:           git-credential-aol
           Version:        ${{ github.event.inputs.version }}
@@ -639,31 +345,6 @@ jobs:
           %{_bindir}/git-credential-aol
           EOF
 
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git pull
-          git add .
-          git commit -m "Update RPM package (AOL) to ${{ github.event.inputs.version }}" || true
-      - name: Push changes to the repo
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
-      - name: "Trigger COPR webhook"
-        run: |
-          curl -sS -X POST $COPR_WEBHOOK/git-credential-aol
-        env:
-          COPR_WEBHOOK: ${{ secrets.COPR_WEBHOOK }}
-  Release-RPM-MSGraph:
-    needs: [Release-RPM-AOL]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v5
-
-      - name: Release
-        id: publish
-        run: |
           cat <<EOF  > ./rpm/git-msgraph.spec
           Name:           git-msgraph
           Version:        ${{ github.event.inputs.version }}
@@ -706,31 +387,6 @@ jobs:
           %{_bindir}/git-msgraph
           EOF
 
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git pull
-          git add .
-          git commit -m "Update RPM package (Microsoft Graph API) to ${{ github.event.inputs.version }}" || true
-      - name: Push changes to the repo
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
-      - name: "Trigger COPR webhook"
-        run: |
-          curl -sS -X POST $COPR_WEBHOOK/git-msgraph
-        env:
-          COPR_WEBHOOK: ${{ secrets.COPR_WEBHOOK }}
-  Release-RPM-ProtonMail:
-    needs: [Release-RPM-MSGraph]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout Repo"
-        uses: actions/checkout@v5
-
-      - name: Release
-        id: publish
-        run: |
           cat <<EOF  > ./rpm/git-protonmail.spec
           Name:           git-protonmail
           Version:        ${{ github.event.inputs.version }}
@@ -793,7 +449,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git pull
           git add .
-          git commit -m "Update RPM package (ProtonMail API) to ${{ github.event.inputs.version }}" || true
+          git commit -m "Update RPM packages to ${{ github.event.inputs.version }}" || true
       - name: Push changes to the repo
         uses: ad-m/github-push-action@master
         with:
@@ -801,7 +457,10 @@ jobs:
           branch: ${{ github.ref }}
       - name: "Trigger COPR webhook"
         run: |
-          curl -sS -X POST $COPR_WEBHOOK/git-protonmail
+          for i in git-credential-outlook git-credential-gmail git-credential-yahoo git-msgraph git-protonmail
+          do
+            curl -sS -X POST $COPR_WEBHOOK/$i
+          done
         env:
           COPR_WEBHOOK: ${{ secrets.COPR_WEBHOOK }}
   Release-Homebrew:
