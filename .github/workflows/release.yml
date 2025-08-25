@@ -580,7 +580,7 @@ jobs:
             echo "arch=(\"any\")" >> PKGBUILD && \
             echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
             echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
-            echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-bcrypt\" \"python3-cryptography\" \"python-keyring\" \"python-pgpy\" \"python-pyasn1\" \"python-requests\" \"python-requests-toolbelt\" \"python-typing_extensions\")" >> PKGBUILD && \
+            echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-bcrypt\" \"python-cryptography\" \"python-keyring\" \"python-pgpy\" \"python-pyasn1\" \"python-requests\" \"python-requests-toolbelt\" \"python-typing_extensions\")" >> PKGBUILD && \
             echo "optdepends=(\"python-opencv: For auto-solving CAPTCHA\" \"python-numpy: For auto-solving CAPTCHA\" \"python-pyqt6-webengine: For easier manual CAPTCHA solving\")" >> PKGBUILD && \
             echo "source=(\"\$pkgname\")" >> PKGBUILD && \
             echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
