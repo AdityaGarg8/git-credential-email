@@ -7,7 +7,7 @@ This repo contains the following helpers:
 - `git-credential-yahoo`: For Yahoo accounts.
 - `git-credential-aol`: For AOL accounts.
 - `git-msgraph`: Helper to use Microsoft Graph API instead of SMTP to send emails.
-- `git-protonmail`: Helper to use ProtonMail API to send emails.
+- `git-protonmail`: Helper to use Proton Mail API to send emails.
 
 They can be used with `git send-email`, especially when Outlook no longer supports app passwords.
 
@@ -19,8 +19,8 @@ It is a simple python script, based on <https://github.com/google/gmail-oauth2-t
 - As per demand, it uses the refresh token to generate OAuth2.0 access tokens as and when required.
 - The refresh token and access token is stored securely using the `keyring` module of pip. More information about this can be read from <https://pypi.org/project/keyring/>.
 - Everytime the helper is called, it passes the stored access token to git. If the access token has expired, the helper first refreshes it automatically and passes the new access token.
-- For APIs like Microsoft Graph and ProtonMail, it exploits the sendmail-like command ability of `git send-email`
-- For ProtonMail, the authentication flow is different. The helper uses the web API of ProtonMail to get the required keys for end to end encryption, store cookies in form of session file etc.
+- For APIs like Microsoft Graph and Proton Mail, it exploits the sendmail-like command ability of `git send-email`
+- For Proton Mail, the authentication flow is different. The helper uses the web API of Proton Mail to get the required keys for end to end encryption, store cookies in form of session file etc.
 
 ## Installation
 
@@ -36,7 +36,7 @@ It is a simple python script, based on <https://github.com/google/gmail-oauth2-t
   pip install keyring requests
   ```
 
-- For **ProtonMail**, you also need to install some more modules by running:
+- For **Proton Mail**, you also need to install some more modules by running:
 
   ```bash
   pip install bcrypt cryptography keyring PGPy13 requests requests-toolbelt typing-extensions
@@ -98,7 +98,7 @@ tar -xf %temp%\cred.zip -C "%ProgramFiles%\Git\mingw64\libexec\git-core"
 
 ## Setting up OAuth 2.0 client credentials
 
-**You can skip this section if you are using ProtonMail**
+**You can skip this section if you are using Proton Mail**
 
 In order to use OAuth2.0, you need to provide an OAuth 2.0 `client_id` and a `client_secret` (secret not needed in Outlook) to allow the helper to authenticate with email servers on your behalf.
 
@@ -226,9 +226,9 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
   git credential-aol --authenticate --external-auth
   ```
 
-### ProtonMail
+### Proton Mail
 
-- You can authenticate with your ProtonMail credentials by running:
+- You can authenticate with your Proton Mail credentials by running:
 
   ```bash
   git protonmail --authenticate
@@ -240,9 +240,9 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
   git protonmail --authenticate --alternate-auth
   ```
 
-#### Solving CAPTCHA while authenticating in ProtonMail
+#### Solving CAPTCHA while authenticating in Proton Mail
 
-There is a high chance that you will be asked to solve a CAPTCHA when you try to authenticate for ProtonMail. The on-screen instructions should be followed while solving the CAPTCHA.
+There is a high chance that you will be asked to solve a CAPTCHA when you try to authenticate for Proton Mail. The on-screen instructions should be followed while solving the CAPTCHA.
 
 For an easier CAPTCHA solving experience, you can install either `PyQt6-WebEngine` or `OpenCV`.
 
@@ -263,7 +263,7 @@ You can install them by running (modify the commands accordingly if you want to 
 ## Usage
 
 - Once authenticated, the refresh token gets saved in your keyring. You can run your helper to confirm the same. For example, for **Gmail** run `git credential-gmail`. It's output should now show an access token.
-- For **ProtonMail** users instead of a refresh token, a session file is stored in your `$HOME` folder and is encrypted with a random key. That key is stored in your keyring. To check if its authenticated, check for presence of `.git-protonmail.pickle` file in your `$HOME` folder. Note that this file may be hidden by default on Linux and macOS.
+- For **Proton Mail** users instead of a refresh token, a session file is stored in your `$HOME` folder and is encrypted with a random key. That key is stored in your keyring. To check if its authenticated, check for presence of `.git-protonmail.pickle` file in your `$HOME` folder. Note that this file may be hidden by default on Linux and macOS.
 
 - Now run:
 
@@ -343,7 +343,7 @@ You can install them by running (modify the commands accordingly if you want to 
         from = Your Name <someone@aol.com> # Replace this with your name and email address
   ```
 
-### ProtonMail
+### Proton Mail
 
   ```config
   [sendemail]
@@ -359,7 +359,7 @@ In case you want to delete the refresh token, that was stored by the helper, as 
 git credential-gmail --delete-token
 ```
 
-For **ProtonMail**, you need to delete both the session file and the key that encrypted it. This command will help you for that:
+For **Proton Mail**, you need to delete both the session file and the key that encrypted it. This command will help you for that:
 
 ```bash
 git protonmail --delete-session
@@ -384,4 +384,4 @@ In case authentication fails:
 - <https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-device-code> (For adding device flow support to Outlook).
 - <https://learn.microsoft.com/en-us/graph/api/user-sendmail> (For Microsoft Graph API)
 - <https://developer.yahoo.com/oauth2/guide/flows_authcode> (For Yahoo).
-- <https://github.com/opulentfox-29/protonmail-api-client> (For ProtonMail).
+- <https://github.com/opulentfox-29/protonmail-api-client> (For Proton Mail).
