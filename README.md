@@ -276,14 +276,14 @@ You can install them by running (modify the commands accordingly if you want to 
 ### Gmail
 
   ```config
-  [credential "smtp://smtp.gmail.com:587"]
+  [credential "smtp://smtp.gmail.com:465"]
         helper = 
         helper = gmail
   [sendemail]
-        smtpEncryption = tls
+        smtpEncryption = ssl
         smtpServer = smtp.gmail.com
         smtpUser = someone@gmail.com # Replace this with your email address
-        smtpServerPort = 587
+        smtpServerPort = 465
         smtpAuth = OAUTHBEARER
         from = Your Name <someone@gmail.com> # Replace this with your name and email address
   ```
@@ -316,14 +316,14 @@ You can install them by running (modify the commands accordingly if you want to 
 ### Yahoo
 
   ```config
-  [credential "smtp://smtp.mail.yahoo.com:587"]
+  [credential "smtp://smtp.mail.yahoo.com:465"]
         helper = 
         helper = yahoo
   [sendemail]
-        smtpEncryption = tls
+        smtpEncryption = ssl
         smtpServer = smtp.mail.yahoo.com
         smtpUser = someone@yahoo.com # Replace this with your email address
-        smtpServerPort = 587
+        smtpServerPort = 465
         smtpAuth = OAUTHBEARER
         from = Your Name <someone@yahoo.com> # Replace this with your name and email address
   ```
@@ -331,14 +331,14 @@ You can install them by running (modify the commands accordingly if you want to 
 ### AOL
 
   ```config
-  [credential "smtp://smtp.aol.com:587"]
+  [credential "smtp://smtp.aol.com:465"]
         helper = 
         helper = aol
   [sendemail]
-        smtpEncryption = tls
+        smtpEncryption = ssl
         smtpServer = smtp.aol.com
         smtpUser = someone@aol.com # Replace this with your email address
-        smtpServerPort = 587
+        smtpServerPort = 465
         smtpAuth = OAUTHBEARER
         from = Your Name <someone@aol.com> # Replace this with your name and email address
   ```
