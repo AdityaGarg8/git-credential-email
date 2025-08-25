@@ -463,6 +463,146 @@ jobs:
           done
         env:
           COPR_WEBHOOK: ${{ secrets.COPR_WEBHOOK }}
+  Release-Archlinux:
+    needs: [Release-GitHub]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repo"
+        uses: actions/checkout@v5
+        with:
+          ref: v${{ github.event.inputs.version }}
+
+      - name: Release
+        id: publish
+        run: |
+          echo -n "$GPG_SIGNING_KEY" | base64 -di > key
+          docker pull archlinux:latest
+          docker run \
+            -e GPG_SIGNING_EMAIL=${{ secrets.GPG_SIGNING_EMAIL }} \
+            -e GH_TOKEN=${{ secrets.PAT }} \
+            -e VER=${{ github.event.inputs.version }} \
+            -t \
+            -v "$(pwd)":/repo \
+            archlinux:latest \
+            /bin/bash -c 'pacman -Syu --noconfirm --needed sudo git base-devel wget github-cli && \
+            mkdir /build && \
+            mkdir /release && \
+            useradd builduser -m && chown -R builduser:builduser /build && passwd -d builduser && \
+            printf "builduser ALL=(ALL) ALL\n" | tee -a /etc/sudoers && \
+            cp -r /repo/* /build && cat /repo/key | gpg --import && \
+            cd /build && \
+
+
+            echo "pkgname=git-credential-outlook" > PKGBUILD && \
+            echo "pkgver=${VER}" >> PKGBUILD && \
+            echo "pkgrel=1" >> PKGBUILD && \
+            echo "pkgdesc=\"Git credential helper for Microsoft Outlook accounts\"" >> PKGBUILD && \
+            echo "arch=(\"any\")" >> PKGBUILD && \
+            echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
+            echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
+            echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-keyring\" \"python-requests\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\")" >> PKGBUILD && \
+            echo "source=(\"\$pkgname\")" >> PKGBUILD && \
+            echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
+            echo "package() {" >> PKGBUILD && \
+            echo "    install -Dm755 \"\$srcdir/\$pkgname\" \"\$pkgdir/usr/bin/\$pkgname\"" >> PKGBUILD && \
+            echo "}" >> PKGBUILD && \
+            sudo -u builduser makepkg --nodeps && \
+
+            echo "pkgname=git-credential-gmail" > PKGBUILD && \
+            echo "pkgver=${VER}" >> PKGBUILD && \
+            echo "pkgrel=1" >> PKGBUILD && \
+            echo "pkgdesc=\"Git credential helper for Gmail accounts\"" >> PKGBUILD && \
+            echo "arch=(\"any\")" >> PKGBUILD && \
+            echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
+            echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
+            echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-keyring\" \"python-requests\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\")" >> PKGBUILD && \
+            echo "source=(\"\$pkgname\")" >> PKGBUILD && \
+            echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
+            echo "package() {" >> PKGBUILD && \
+            echo "    install -Dm755 \"\$srcdir/\$pkgname\" \"\$pkgdir/usr/bin/\$pkgname\"" >> PKGBUILD && \
+            echo "}" >> PKGBUILD && \
+            sudo -u builduser makepkg --nodeps && \
+
+            echo "pkgname=git-credential-yahoo" > PKGBUILD && \
+            echo "pkgver=${VER}" >> PKGBUILD && \
+            echo "pkgrel=1" >> PKGBUILD && \
+            echo "pkgdesc=\"Git credential helper for Yahoo accounts\"" >> PKGBUILD && \
+            echo "arch=(\"any\")" >> PKGBUILD && \
+            echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
+            echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
+            echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-keyring\" \"python-requests\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\")" >> PKGBUILD && \
+            echo "source=(\"\$pkgname\")" >> PKGBUILD && \
+            echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
+            echo "package() {" >> PKGBUILD && \
+            echo "    install -Dm755 \"\$srcdir/\$pkgname\" \"\$pkgdir/usr/bin/\$pkgname\"" >> PKGBUILD && \
+            echo "}" >> PKGBUILD && \
+            sudo -u builduser makepkg --nodeps && \
+
+            echo "pkgname=git-credential-aol" > PKGBUILD && \
+            echo "pkgver=${VER}" >> PKGBUILD && \
+            echo "pkgrel=1" >> PKGBUILD && \
+            echo "pkgdesc=\"Git credential helper for AOL accounts\"" >> PKGBUILD && \
+            echo "arch=(\"any\")" >> PKGBUILD && \
+            echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
+            echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
+            echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-keyring\" \"python-requests\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\")" >> PKGBUILD && \
+            echo "source=(\"\$pkgname\")" >> PKGBUILD && \
+            echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
+            echo "package() {" >> PKGBUILD && \
+            echo "    install -Dm755 \"\$srcdir/\$pkgname\" \"\$pkgdir/usr/bin/\$pkgname\"" >> PKGBUILD && \
+            echo "}" >> PKGBUILD && \
+            sudo -u builduser makepkg --nodeps && \
+
+            echo "pkgname=git-msgraph" > PKGBUILD && \
+            echo "pkgver=${VER}" >> PKGBUILD && \
+            echo "pkgrel=1" >> PKGBUILD && \
+            echo "pkgdesc=\"Git helper to use Microsoft Graph API instead of SMTP to send emails\"" >> PKGBUILD && \
+            echo "arch=(\"any\")" >> PKGBUILD && \
+            echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
+            echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
+            echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-keyring\" \"python-requests\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\")" >> PKGBUILD && \
+            echo "source=(\"\$pkgname\")" >> PKGBUILD && \
+            echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
+            echo "package() {" >> PKGBUILD && \
+            echo "    install -Dm755 \"\$srcdir/\$pkgname\" \"\$pkgdir/usr/bin/\$pkgname\"" >> PKGBUILD && \
+            echo "}" >> PKGBUILD && \
+            sudo -u builduser makepkg --nodeps && \
+
+            echo "pkgname=git-protonmail" > PKGBUILD && \
+            echo "pkgver=${VER}" >> PKGBUILD && \
+            echo "pkgrel=1" >> PKGBUILD && \
+            echo "pkgdesc=\"Git helper to use ProtonMail API to send emails\"" >> PKGBUILD && \
+            echo "arch=(\"any\")" >> PKGBUILD && \
+            echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
+            echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
+            echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-bcrypt\" \"python3-cryptography\" \"python-keyring\" \"python-pgpy\" \"python-pyasn1\" \"python-requests\" \"python-requests-toolbelt\" \"python-typing_extensions\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-opencv: For auto-solving CAPTCHA\" \"python-numpy: For auto-solving CAPTCHA\" \"python-pyqt6-webengine: For easier manual CAPTCHA solving\")" >> PKGBUILD && \
+            echo "source=(\"\$pkgname\")" >> PKGBUILD && \
+            echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
+            echo "package() {" >> PKGBUILD && \
+            echo "    install -Dm755 \"\$srcdir/\$pkgname\" \"\$pkgdir/usr/bin/\$pkgname\"" >> PKGBUILD && \
+            echo "}" >> PKGBUILD && \
+            sudo -u builduser makepkg --nodeps && \
+
+            cp -v ./*pkg.tar.zst /release && \
+            cd /release && \
+            gpg --detach-sign --use-agent --yes git-credential-outlook*pkg.tar.zst && \
+            gpg --detach-sign --use-agent --yes git-credential-gmail*pkg.tar.zst && \
+            gpg --detach-sign --use-agent --yes git-credential-yahoo*pkg.tar.zst && \
+            gpg --detach-sign --use-agent --yes git-credential-aol*pkg.tar.zst && \
+            gpg --detach-sign --use-agent --yes git-msgraph*pkg.tar.zst && \
+            gpg --detach-sign --use-agent --yes git-protonmail*pkg.tar.zst && \
+            repo-add git-credential-email.db.tar.gz *pkg.tar.zst --sign && cd / && \
+            gh release download archlinux -D archlinux -R AdityaGarg8/git-credential-email && \
+            cp -v /release/* ./archlinux && cd ./archlinux && \
+            gh release upload archlinux ./* --clobber -R AdityaGarg8/git-credential-email'
+        env:
+          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
   Release-Homebrew:
     needs: [Release-GitHub]
     runs-on: ubuntu-latest
