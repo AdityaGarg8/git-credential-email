@@ -67,6 +67,28 @@ sudo dnf copr enable -y adityagarg8/git-credential-email
 sudo dnf install -y git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
 ```
 
+#### Arch Linux
+
+Edit `/etc/pacman.conf` and add the following at its end:
+
+```bash
+[git-credential-email]
+Server = https://github.com/AdityaGarg8/git-credential-email/releases/download/archlinux
+```
+
+Now import the GPG Key used to sign the packages by running:
+
+```bash
+sudo pacman-key --recv-keys 48DC9F9CC66D3FAF --keyserver keyserver.ubuntu.com
+sudo pacman-key --lsign-key 48DC9F9CC66D3FAF
+```
+
+Finally install the helpers by running:
+
+```bash
+sudo pacman -Sy git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
+```
+
 #### OpenSUSE Tumbleweed
 
 Run the following to add the copr repo and install the helpers:
