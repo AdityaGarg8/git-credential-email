@@ -89,6 +89,8 @@ Finally install the helpers by running:
 sudo pacman -Sy git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
 ```
 
+**Note:** You may also have to install a supported keyring backend as described in <https://pypi.org/project/keyring/>.
+
 #### OpenSUSE Tumbleweed
 
 Run the following to add the copr repo and install the helpers:
