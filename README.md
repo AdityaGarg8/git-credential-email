@@ -401,7 +401,7 @@ In case authentication fails:
 
 2. If `--force-refresh-token` does not work, try [authenticating again](#authenticating-with-your-email-provider).
 
-## References:
+## References and useful links:
 
 - <https://github.com/google/gmail-oauth2-tools/blob/master/python/oauth2.py> (As a skeleton for all helpers and also Gmail support).
 - <https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow> (For Outlook).
@@ -409,3 +409,6 @@ In case authentication fails:
 - <https://learn.microsoft.com/en-us/graph/api/user-sendmail> (For Microsoft Graph API)
 - <https://developer.yahoo.com/oauth2/guide/flows_authcode> (For Yahoo).
 - <https://github.com/opulentfox-29/protonmail-api-client> (For Proton Mail).
+- <https://github.com/AdityaGarg8/git-credential-email/releases/tag/debian> (GitHub release that hosts the apt repo).
+- <https://github.com/AdityaGarg8/git-credential-email/releases/tag/archlinux> (GitHub release that hosts the pacman repo).
+- <https://copr.fedorainfracloud.org/coprs/adityagarg8/git-credential-email/> (Copr repo).
