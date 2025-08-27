@@ -103,6 +103,8 @@ https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmai
 class SendMessageError(Exception):
 	"""Error when trying to send message"""
 
+class InvalidPassword(Exception):
+	"""Invalid username or password"""
 
 class InvalidTwoFactorCode(Exception):
 	"""Invalid Two-Factor Authentication (2FA) code"""
@@ -1381,6 +1383,8 @@ class ProtonMail:
 				raise InvalidCaptcha(auth['Error'])
 			if auth["Code"] == 2028:
 				raise ConnectionRefusedError(f"Too many recent logins: {auth.get('Error')}")
+			if auth["Code"] == 8002:
+				raise InvalidPassword("Invalid username or password")
 
 		self.user.verify_session(b64decode(auth['ServerProof']))
 
@@ -1643,9 +1647,9 @@ else:
 
 if "--authenticate" in sys.argv:
 	if "--alternate-auth" in sys.argv:
-		login_type = LoginType.DEV
-	else:
 		login_type = LoginType.WEB
+	else:
+		login_type = LoginType.DEV
 
 	username = input("Enter your Proton Mail username: ")
 	password = getpass.getpass("Enter your Proton Mail password: ")
