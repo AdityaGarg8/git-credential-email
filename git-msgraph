@@ -106,13 +106,20 @@ def delete_client():
 	keyring.delete_password(ServiceName, "redirect_uri")
 
 def qr_encode(url):
-	headers = {'User-Agent': 'curl'}
-	url_qr = f"https://qrenco.de/{url}"
 	try:
-		response = requests.get(url_qr, headers=headers)
-		response.raise_for_status()
-		content = response.text
-		print(content)
+		try:
+			import qrcode
+			qr = qrcode.QRCode(border=2)
+			qr.add_data(url)
+			qr.make(fit=True)
+			qr.print_ascii(invert=True)
+		except Exception:
+			headers = {'User-Agent': 'curl'}
+			url_qr = f"https://qrenco.de/{url}"
+			response = requests.get(url_qr, headers=headers)
+			response.raise_for_status()
+			content = response.text
+			print(content)
 	except Exception:
 		# let's not interrupt the process if qrenco.de is down
 		pass
