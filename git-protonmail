@@ -1701,7 +1701,7 @@ if "--authenticate" in sys.argv:
 
 elif "-i" in sys.argv:
 	if not os.path.exists(session_path):
-		sys.exit("No session file found.\nPlease authenticate first by running `git credential-outlook --authenticate`")
+		sys.exit("No session file found.\nPlease authenticate first by running `git protonmail --authenticate`")
 	try:
 		key = load_encryption_key()
 		try:
