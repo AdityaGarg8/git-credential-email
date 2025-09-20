@@ -1,11 +1,11 @@
 Name:           git-credential-aol
-Version:        5.4
+Version:        5.5
 Release:        1%{?dist}
 Summary:        Git credential helper for AOL accounts
 
 License:        Apache-2.0
 URL:            https://github.com/AdityaGarg8/git-credential-email
-Source0:        %{url}/archive/refs/tags/v5.4.tar.gz
+Source0:        %{url}/archive/refs/tags/v5.5.tar.gz
 
 BuildArch:      noarch
 Requires:       git-email
@@ -13,10 +13,12 @@ Requires:       git-email
 %if 0%{?fedora}%{?rhel}
 Requires:       python-keyring
 Requires:       python-requests
+Recommends:     python-qrcode
 Suggests:       python-pyqt6-webengine
 %elif 0%{?suse_version}%{?sle_version}
 Requires:       python3-keyring
 Requires:       python3-requests
+Recommends:     python3-qrcode
 Suggests:       python3-PyQt6-WebEngine
 %else
 %{error: unsupported distribution}
@@ -26,7 +28,7 @@ Suggests:       python3-PyQt6-WebEngine
 Git credential helper for AOL accounts.
 
 %prep
-%autosetup -n git-credential-email-5.4
+%autosetup -n git-credential-email-5.5
 
 %build
 
