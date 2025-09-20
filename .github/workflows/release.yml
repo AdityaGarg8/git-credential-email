@@ -73,6 +73,7 @@ jobs:
           Section: utils
           Priority: optional
           Depends: git-email, python3-keyring, python3-requests
+          Recommends: python3-qrcode
           Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
@@ -86,6 +87,7 @@ jobs:
           Section: utils
           Priority: optional
           Depends: git-email, python3-keyring, python3-requests
+          Recommends: python3-qrcode
           Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
@@ -99,6 +101,7 @@ jobs:
           Section: utils
           Priority: optional
           Depends: git-email, python3-keyring, python3-requests
+          Recommends: python3-qrcode
           Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
@@ -112,6 +115,7 @@ jobs:
           Section: utils
           Priority: optional
           Depends: git-email, python3-keyring, python3-requests
+          Recommends: python3-qrcode
           Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
@@ -125,6 +129,7 @@ jobs:
           Section: utils
           Priority: optional
           Depends: git-email, python3-keyring, python3-requests
+          Recommends: python3-qrcode
           Suggests: python3-pyqt6.qtwebengine
           Enhances: git-email
           Architecture: all
@@ -193,10 +198,12 @@ jobs:
           %if 0%{?fedora}%{?rhel}
           Requires:       python-keyring
           Requires:       python-requests
+          Recommends:     python-qrcode
           Suggests:       python-pyqt6-webengine
           %elif 0%{?suse_version}%{?sle_version}
           Requires:       python3-keyring
           Requires:       python3-requests
+          Recommends:     python3-qrcode
           Suggests:       python3-PyQt6-WebEngine
           %else
           %{error: unsupported distribution}
@@ -235,10 +242,12 @@ jobs:
           %if 0%{?fedora}%{?rhel}
           Requires:       python-keyring
           Requires:       python-requests
+          Recommends:     python-qrcode
           Suggests:       python-pyqt6-webengine
           %elif 0%{?suse_version}%{?sle_version}
           Requires:       python3-keyring
           Requires:       python3-requests
+          Recommends:     python3-qrcode
           Suggests:       python3-PyQt6-WebEngine
           %else
           %{error: unsupported distribution}
@@ -277,10 +286,12 @@ jobs:
           %if 0%{?fedora}%{?rhel}
           Requires:       python-keyring
           Requires:       python-requests
+          Recommends:     python-qrcode
           Suggests:       python-pyqt6-webengine
           %elif 0%{?suse_version}%{?sle_version}
           Requires:       python3-keyring
           Requires:       python3-requests
+          Recommends:     python3-qrcode
           Suggests:       python3-PyQt6-WebEngine
           %else
           %{error: unsupported distribution}
@@ -319,10 +330,12 @@ jobs:
           %if 0%{?fedora}%{?rhel}
           Requires:       python-keyring
           Requires:       python-requests
+          Recommends:     python-qrcode
           Suggests:       python-pyqt6-webengine
           %elif 0%{?suse_version}%{?sle_version}
           Requires:       python3-keyring
           Requires:       python3-requests
+          Recommends:     python3-qrcode
           Suggests:       python3-PyQt6-WebEngine
           %else
           %{error: unsupported distribution}
@@ -361,10 +374,12 @@ jobs:
           %if 0%{?fedora}%{?rhel}
           Requires:       python-keyring
           Requires:       python-requests
+          Recommends:     python-qrcode
           Suggests:       python-pyqt6-webengine
           %elif 0%{?suse_version}%{?sle_version}
           Requires:       python3-keyring
           Requires:       python3-requests
+          Recommends:     python3-qrcode
           Suggests:       python3-PyQt6-WebEngine
           %else
           %{error: unsupported distribution}
@@ -501,7 +516,7 @@ jobs:
             echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
             echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
             echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-keyring\" \"python-requests\")" >> PKGBUILD && \
-            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\" \"python-qrcode: To generate QR codes of important URLs\")" >> PKGBUILD && \
             echo "source=(\"\$pkgname\")" >> PKGBUILD && \
             echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
             echo "package() {" >> PKGBUILD && \
@@ -517,7 +532,7 @@ jobs:
             echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
             echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
             echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-keyring\" \"python-requests\")" >> PKGBUILD && \
-            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\" \"python-qrcode: To generate QR codes of important URLs\")" >> PKGBUILD && \
             echo "source=(\"\$pkgname\")" >> PKGBUILD && \
             echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
             echo "package() {" >> PKGBUILD && \
@@ -533,7 +548,7 @@ jobs:
             echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
             echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
             echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-keyring\" \"python-requests\")" >> PKGBUILD && \
-            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\" \"python-qrcode: To generate QR codes of important URLs\")" >> PKGBUILD && \
             echo "source=(\"\$pkgname\")" >> PKGBUILD && \
             echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
             echo "package() {" >> PKGBUILD && \
@@ -549,7 +564,7 @@ jobs:
             echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
             echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
             echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-keyring\" \"python-requests\")" >> PKGBUILD && \
-            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\" \"python-qrcode: To generate QR codes of important URLs\")" >> PKGBUILD && \
             echo "source=(\"\$pkgname\")" >> PKGBUILD && \
             echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
             echo "package() {" >> PKGBUILD && \
@@ -565,7 +580,7 @@ jobs:
             echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
             echo "license=(\"Apache-2.0\")" >> PKGBUILD && \
             echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-keyring\" \"python-requests\")" >> PKGBUILD && \
-            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-pyqt6-webengine: For easier OAuth2 flow\" \"python-qrcode: To generate QR codes of important URLs\")" >> PKGBUILD && \
             echo "source=(\"\$pkgname\")" >> PKGBUILD && \
             echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
             echo "package() {" >> PKGBUILD && \
@@ -658,7 +673,7 @@ jobs:
           New-Item -ItemType Directory -Path aol
           New-Item -ItemType Directory -Path msgraph
           New-Item -ItemType Directory -Path protonmail
-          pip install pyinstaller keyring requests
+          pip install pyinstaller keyring requests qrcode
           Copy-Item -Path .\git-credential-outlook -Destination .\outlook
           Copy-Item -Path .\git-credential-gmail -Destination .\gmail
           Copy-Item -Path .\git-credential-yahoo -Destination .\yahoo
