@@ -1660,14 +1660,18 @@ if "--authenticate" in sys.argv:
 	else:
 		login_type = LoginType.DEV
 
+	username = input("Enter your Proton Mail username: ")
+	password = getpass.getpass("Enter your Proton Mail password: ")
+
 	if os.path.exists(session_path):
 		failed = 0
-		print("Found an existing session file. Attempting to revoke the session first.")
+		print("\033[93mFound an existing session file\033[0m")
+		print("\033[93mAttempting to revoke the session\033[0m")
 		key = load_encryption_key()
 		try:
 			decrypt_file(session_path, key.encode())
 		except Exception:
-			print("Failed to decrypt the session file. Session will not be revoked.\n")
+			print("\x1b[31mFailed to decrypt the session file. Session will not be revoked.\x1b[0m")
 			failed = 1
 		if failed == 0:
 			try:
@@ -1676,14 +1680,11 @@ if "--authenticate" in sys.argv:
 				resp = proton.revoke_current_session()
 				code = resp.get('Code') if isinstance(resp, dict) else None
 				if code == 1000:
-					print("Session revoked successfully\n")
+					print("\x1b[32mSession revoked successfully\x1b[0m")
 				else:
-					print("Failed to revoke session. Session may have already been revoked.\n")
+					print("\x1b[31mFailed to revoke session. Session may have already been revoked.\x1b[0m")
 			except Exception:
-				print("Failed to load/revoke session. Session may have already been revoked.\n")
-
-	username = input("Enter your Proton Mail username: ")
-	password = getpass.getpass("Enter your Proton Mail password: ")
+				print("\x1b[31mFailed to load/revoke session. Session may have already been revoked.\x1b[0m")
 
 	try:
 		try:
