@@ -1105,6 +1105,10 @@ class ProtonMail:
 
 		return draft
 
+	def revoke_current_session(self) -> dict:
+		"""Revoke the current session."""
+		return self._delete('account', 'core/v4/auth').json()
+
 	def save_session(self, path: str) -> None:
 		"""
 		Saving the current session to a file for later loading.
@@ -1576,11 +1580,15 @@ class ProtonMail:
 	def _post(self, base: str, endpoint: str, **kwargs) -> Response:
 		return self.__request('post', base, endpoint, **kwargs)
 
+	def _delete(self, base: str, endpoint: str, **kwargs) -> Response:
+		return self.__request('delete', base, endpoint, **kwargs)
+
 	@delete_duplicates_cookies_and_reset_domain
 	def __request(self, method: str, base: str, endpoint: str, **kwargs) -> Response:
 		methods = {
 			'get': self.session.get,
-			'post': self.session.post
+			'post': self.session.post,
+			'delete': self.session.delete
 		}
 		response = methods[method](f'{urls_api[base]}/{endpoint}', **kwargs)
 		if response.status_code == 401:  # access token is expired
@@ -1651,6 +1659,28 @@ if "--authenticate" in sys.argv:
 		login_type = LoginType.WEB
 	else:
 		login_type = LoginType.DEV
+
+	if os.path.exists(session_path):
+		failed = 0
+		print("Found an existing session file. Attempting to revoke the session first.")
+		key = load_encryption_key()
+		try:
+			decrypt_file(session_path, key.encode())
+		except Exception:
+			print("Failed to decrypt the session file. Session will not be revoked.\n")
+			failed = 1
+		if failed == 0:
+			try:
+				proton.load_session(session_path, auto_save=True)
+				encrypt_file(session_path, key)
+				resp = proton.revoke_current_session()
+				code = resp.get('Code') if isinstance(resp, dict) else None
+				if code == 1000:
+					print("Session revoked successfully\n")
+				else:
+					print("Failed to revoke session. Session may have already been revoked.\n")
+			except Exception:
+				print("Failed to load/revoke session. Session may have already been revoked.\n")
 
 	username = input("Enter your Proton Mail username: ")
 	password = getpass.getpass("Enter your Proton Mail password: ")
@@ -1768,11 +1798,37 @@ elif "-i" in sys.argv:
 
 elif "--delete-session" in sys.argv:
 	exit_error = 0
+
+	try:
+		if not os.path.exists(session_path):
+			print("No session file found")
+			exit_error = 1
+		else:
+			key = load_encryption_key()
+			try:
+				decrypt_file(session_path, key.encode())
+			except Exception:
+				print("Failed to decrypt session file. Session will not be revoked.")
+				exit_error = 1
+			if exit_error == 0:
+				proton.load_session(session_path, auto_save=True)
+				resp = proton.revoke_current_session()
+				code = resp.get('Code') if isinstance(resp, dict) else None
+				if code == 1000:
+					print("Session revoked successfully")
+				else:
+					print("Failed to revoke session. Session may have already been revoked.")
+					exit_error = 1
+	except Exception:
+		print("Failed to load/revoke session. Session may have already been revoked.")
+		exit_error = 1
+
 	try:
 		os.remove(session_path)
-		print("Session deleted successfully")
+		print("Session file deleted successfully")
 	except Exception:
-		print("No session file found")
+		if os.path.exists(session_path):
+			print("Failed to delete session file")
 		exit_error = 1
 
 	try:
