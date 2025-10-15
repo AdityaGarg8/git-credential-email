@@ -56,11 +56,11 @@ from typing_extensions import Self
 """Constants
 https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/constants.py
 """
-PM_APP_VERSION_ACCOUNT = 'web-account@5.0.289.0'
+PM_APP_VERSION_ACCOUNT = 'web-account@5.0.299.0'
 # I used mitmproxy to find this version. URLs starting with 'https://mail.proton.me/api' have this version in the header.
 # These days, opening all settings also shows this version.
 
-PM_APP_VERSION_MAIL = 'web-mail@5.0.81.4'
+PM_APP_VERSION_MAIL = 'web-mail@5.0.83.5'
 # Can be found in Inbox on Proton Mail's website. Also seen in Activity monitor in Settings > Security and privacy.
 
 PM_APP_VERSION_DEV = 'Other'
