@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Create tag
         if: github.ref == 'refs/heads/Mainline'
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: v${{ github.event.inputs.version }}
 
@@ -177,7 +177,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Release
         id: publish
@@ -483,7 +483,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: v${{ github.event.inputs.version }}
 
@@ -623,7 +623,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Get SHA256SUM
         id: compute_sha
@@ -662,7 +662,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: "Checkout Repo"
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Release
         id: publish
