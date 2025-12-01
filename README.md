@@ -102,6 +102,14 @@ sudo zypper install git-credential-gmail git-credential-outlook git-credential-y
 
 (Thanks to [@IsaacOscar](https://github.com/IsaacOscar) for adding support for OpenSUSE Tumbleweed!)
 
+#### Nix/NixOS
+
+On NixOS or a platform running the Nix package manager, one can install the `git-credential-email` meta package or an individual helper package. To e.g. install the meta package in an interactive shell environment, run:
+
+```bash
+nix-shell -p git-credential-email
+```
+
 ### macOS
 
 [Install Homebrew](https://brew.sh/). Then run the following to add the brew tap and install the helpers:
