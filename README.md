@@ -110,6 +110,8 @@ On NixOS or a platform running the Nix package manager, one can install the `git
 nix-shell -p git-credential-email
 ```
 
+(Thanks to [@sephalon](https://github.com/sephalon) for adding support for NixOS!)
+
 ### macOS
 
 [Install Homebrew](https://brew.sh/). Then run the following to add the brew tap and install the helpers:
