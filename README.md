@@ -104,7 +104,7 @@ sudo zypper install git-credential-gmail git-credential-outlook git-credential-y
 
 #### Nix/NixOS
 
-On NixOS or a platform running the Nix package manager, one can install the `git-credential-email` meta package or an individual helper package. To e.g. install the meta package in an interactive shell environment, run:
+On NixOS or a platform running the Nix package manager, one can install the `git-credential-email` meta package or an individual helper package. For example to install the meta package in an interactive shell environment, run:
 
 ```bash
 nix-shell -p git-credential-email
