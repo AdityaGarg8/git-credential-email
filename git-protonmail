@@ -91,7 +91,7 @@ DEFAULT_HEADERS = {
 	'content-type': 'application/json',
 	'origin': 'https://account.proton.me',
 	'referer': 'https://account.proton.me/mail',
-	'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
+	'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
 	'x-pm-appversion': PM_APP_VERSION_ACCOUNT,
 	'x-pm-apiversion': API_VERSION,
 	'x-pm-locale': 'en_US',
