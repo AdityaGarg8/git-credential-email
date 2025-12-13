@@ -11,6 +11,8 @@ This repo contains the following helpers:
 
 They can be used with `git send-email`, especially when Outlook no longer supports app passwords.
 
+*`git-credential-fastmail` is planned but due to paid nature of the service, a paid account/sponsorship for such an account is needed for testing and maintainance. Anyone interested in helping may [raise an issue](https://github.com/AdityaGarg8/git-credential-email/issues).*
+
 ## How does this work?
 
 It is a simple python script, based on <https://github.com/google/gmail-oauth2-tools/blob/master/python/oauth2.py> and <https://github.com/opulentfox-29/protonmail-api-client>. It does the following:
