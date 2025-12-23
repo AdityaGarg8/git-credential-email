@@ -25,7 +25,6 @@ import os
 import pickle
 import random
 import re
-import requests
 import string
 import sys
 import unicodedata
@@ -43,6 +42,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from datetime import datetime
 from email import message_from_file
 from email.header import decode_header, make_header
+from email.mime.text import MIMEText
 from email.parser import Parser
 from email.utils import getaddresses
 from enum import Enum
@@ -56,27 +56,11 @@ from typing_extensions import Self
 """Constants
 https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/constants.py
 """
-def get_latest_protonmail_version(url):
-	resp = requests.get(url, timeout=10)
-	resp.raise_for_status()
-
-	refs = [r["ref"] for r in resp.json()]
-	refs = [r for r in refs if not r.endswith("^{}")]
-
-	if not refs:
-		return None
-
-	latest_ref = refs[-1]
-
-	return latest_ref.split("@", 1)[1]
-
-LATEST_VERSION_ACCOUNT = get_latest_protonmail_version("https://api.github.com/repos/ProtonMail/WebClients/git/matching-refs/tags/proton-account@")
-PM_APP_VERSION_ACCOUNT = f"web-account@{LATEST_VERSION_ACCOUNT if LATEST_VERSION_ACCOUNT is not None else '5.0.321.3'}"
+PM_APP_VERSION_ACCOUNT = 'web-account@5.0.299.0'
 # I used mitmproxy to find this version. URLs starting with 'https://mail.proton.me/api' have this version in the header.
 # These days, opening all settings also shows this version.
 
-LATEST_VERSION_MAIL = get_latest_protonmail_version("https://api.github.com/repos/ProtonMail/WebClients/git/matching-refs/tags/proton-mail@")
-PM_APP_VERSION_MAIL = f"web-mail@{LATEST_VERSION_MAIL if LATEST_VERSION_MAIL is not None else '5.0.91.5'}"
+PM_APP_VERSION_MAIL = 'web-mail@5.0.83.5'
 # Can be found in Inbox on Proton Mail's website. Also seen in Activity monitor in Settings > Security and privacy.
 
 PM_APP_VERSION_DEV = 'Other'
@@ -91,7 +75,7 @@ DEFAULT_HEADERS = {
 	'content-type': 'application/json',
 	'origin': 'https://account.proton.me',
 	'referer': 'https://account.proton.me/mail',
-	'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
+	'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36',
 	'x-pm-appversion': PM_APP_VERSION_ACCOUNT,
 	'x-pm-apiversion': API_VERSION,
 	'x-pm-locale': 'en_US',
