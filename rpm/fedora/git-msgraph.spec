@@ -1,7 +1,7 @@
-Name:           git-credential-gmail
+Name:           git-msgraph
 Version:        5.5.4
 Release:        1%{?dist}
-Summary:        Git credential helper for Gmail accounts
+Summary:        Git helper to use Microsoft Graph API instead of SMTP to send emails
 
 License:        Apache-2.0
 URL:            https://github.com/AdityaGarg8/git-credential-email
@@ -25,7 +25,7 @@ Suggests:       python3-PyQt6-WebEngine
 %endif
 
 %description
-Git credential helper for Gmail accounts.
+Git helper to use Microsoft Graph API instead of SMTP to send emails
 
 %prep
 %autosetup -n git-credential-email-5.5.4
@@ -33,9 +33,10 @@ Git credential helper for Gmail accounts.
 %build
 
 %install
-install -D -m0755 git-credential-gmail %{buildroot}%{_bindir}/git-credential-gmail
+cd git-msgraph/src/git_msgraph
+install -D -m0755 git-msgraph.py %{buildroot}%{_bindir}/git-msgraph
 
 %files
 %license LICENSE-APACHE NOTICE
 %doc README.md
-
+%{_bindir}/git-msgraph

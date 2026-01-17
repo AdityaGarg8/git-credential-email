@@ -38,4 +38,3 @@ install -D -m0755 git-credential-aol %{buildroot}%{_bindir}/git-credential-aol
 %files
 %license LICENSE-APACHE NOTICE
 %doc README.md
-%{_bindir}/git-credential-aol
