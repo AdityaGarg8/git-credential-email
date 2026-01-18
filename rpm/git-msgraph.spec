@@ -33,7 +33,8 @@ Git helper to use Microsoft Graph API instead of SMTP to send emails
 %build
 
 %install
-install -D -m0755 git-msgraph %{buildroot}%{_bindir}/git-msgraph
+cd git-msgraph/src/git_msgraph
+install -D -m0755 git-msgraph.py %{buildroot}%{_bindir}/git-msgraph
 
 %files
 %license LICENSE-APACHE NOTICE

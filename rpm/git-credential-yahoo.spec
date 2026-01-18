@@ -33,7 +33,8 @@ Git credential helper for Yahoo accounts.
 %build
 
 %install
-install -D -m0755 git-credential-yahoo %{buildroot}%{_bindir}/git-credential-yahoo
+cd git-credential-yahoo/src/git_credential_yahoo
+install -D -m0755 git-credential-yahoo.py %{buildroot}%{_bindir}/git-credential-yahoo
 
 %files
 %license LICENSE-APACHE NOTICE

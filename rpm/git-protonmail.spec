@@ -47,7 +47,8 @@ Git helper to use ProtonMail API to send emails
 %build
 
 %install
-install -D -m0755 git-protonmail %{buildroot}%{_bindir}/git-protonmail
+cd git-protonmail/src/git_protonmail
+install -D -m0755 git-protonmail.py %{buildroot}%{_bindir}/git-protonmail
 
 %files
 %license LICENSE-GPL3
