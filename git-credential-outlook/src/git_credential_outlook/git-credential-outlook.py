@@ -232,10 +232,10 @@ Options:
   --set-client           * Set the client details to use for authentication.
   --delete-client        * Delete the client details set using --set-client.
   --authenticate         * Authenticate with Outlook using OAuth2.
-	  --device           * Use device code flow for authentication.
-						   Use this option with --authenticate.
-	  --external-auth    * Authenticate using an external browser.
-						   Use this option with --authenticate.
+  --device               * Use device code flow for authentication.
+                           Use this option with --authenticate.
+  --external-auth        * Authenticate using an external browser.
+			   Use this option with --authenticate.
   --force-refresh-token  * Force refresh the access token.
   --delete-token         * Delete the credentials saved using --authenticate.
 
@@ -245,10 +245,10 @@ Description:
 
 Examples:
   Authenticate using the browser-based flow:
-	git-credential-outlook --authenticate
+  git-credential-outlook --authenticate
 
   Authenticate using the device code flow:
-	git-credential-outlook --authenticate --device
+  git-credential-outlook --authenticate --device
 """)
 		sys.exit(0)
 

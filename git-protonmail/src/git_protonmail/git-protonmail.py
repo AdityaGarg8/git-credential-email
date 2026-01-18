@@ -1847,10 +1847,10 @@ Usage: git protonmail [OPTIONS]
 Options:
   --help                 * Show this help message and exit.
   --authenticate         * Authenticate with Proton Mail using its API.
-	  --alternate-auth   * Authenticate using an alternate method.
-						   Use this option if you are unable to authenticate
-						   using the default method.
-						   Use this option with --authenticate.
+  --alternate-auth       * Authenticate using an alternate method.
+                           Use this option if you are unable to authenticate
+			   using the default method.
+			   Use this option with --authenticate.
   --delete-session       * Delete the session saved using --authenticate.
 
 Description:
@@ -1859,7 +1859,7 @@ Description:
 
 Examples:
   Authenticate using the Proton Mail API:
-	git protonmail --authenticate
+  git protonmail --authenticate
 """)
 		sys.exit(0)
 

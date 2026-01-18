@@ -169,8 +169,8 @@ Options:
   --set-client           * Set the client details to use for authentication.
   --delete-client        * Delete the client details set using --set-client.
   --authenticate         * Authenticate with Yahoo using OAuth2.
-	  --external-auth    * Authenticate using an external browser.
-						   Use this option with --authenticate.
+  --external-auth        * Authenticate using an external browser.
+                           Use this option with --authenticate.
   --force-refresh-token  * Force refresh the access token.
   --delete-token         * Delete the credentials saved using --authenticate.
 
@@ -180,7 +180,7 @@ Description:
 
 Examples:
   Authenticate using the browser-based flow:
-	git-credential-yahoo --authenticate
+  git-credential-yahoo --authenticate
 """)
 		sys.exit(0)
 

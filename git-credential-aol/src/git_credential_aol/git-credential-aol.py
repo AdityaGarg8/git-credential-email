@@ -166,7 +166,7 @@ Options:
   --delete-client        * Delete the client details set using --set-client.
   --authenticate         * Authenticate with AOL using OAuth2.
   --external-auth    * Authenticate using an external browser.
-							   Use this option with --authenticate.
+                       Use this option with --authenticate.
   --force-refresh-token  * Force refresh the access token.
   --delete-token         * Delete the credentials saved using --authenticate.
 
@@ -176,7 +176,7 @@ Description:
 
 Examples:
   Authenticate using the browser-based flow:
-	git-credential-aol --authenticate
+  git-credential-aol --authenticate
 """)
 		sys.exit(0)
 
