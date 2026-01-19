@@ -33,8 +33,7 @@ Git credential helper for Microsoft Outlook accounts.
 %build
 
 %install
-cd git-credential-outlook/src/git_credential_outlook
-install -D -m0755 git-credential-outlook.py %{buildroot}%{_bindir}/git-credential-outlook
+install -D -m0755 git-credential-outlook %{buildroot}%{_bindir}/git-credential-outlook
 
 %files
 %license LICENSE-APACHE NOTICE

@@ -33,8 +33,7 @@ Git credential helper for Gmail accounts.
 %build
 
 %install
-cd git-credential-gmail/src/git_credential_gmail
-install -D -m0755 git-credential-gmail.py %{buildroot}%{_bindir}/git-credential-gmail
+install -D -m0755 git-credential-gmail %{buildroot}%{_bindir}/git-credential-gmail
 
 %files
 %license LICENSE-APACHE NOTICE

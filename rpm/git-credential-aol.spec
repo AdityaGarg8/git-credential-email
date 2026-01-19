@@ -33,8 +33,7 @@ Git credential helper for AOL accounts.
 %build
 
 %install
-cd git-credential-aol/src/git_credential_aol
-install -D -m0755 git-credential-aol.py %{buildroot}%{_bindir}/git-credential-aol
+install -D -m0755 git-credential-aol %{buildroot}%{_bindir}/git-credential-aol
 
 %files
 %license LICENSE-APACHE NOTICE

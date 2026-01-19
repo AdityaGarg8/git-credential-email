@@ -1,3 +1,6 @@
+# Copied from:
+# https://download.copr.fedorainfracloud.org/results/ktdreyer/python-pgpy/fedora-42-x86_64/05965353-python-pgpy/python-pgpy.spec
+
 %global pypi_name pgpy13
 %global package_name pgpy
 %global pypi_version 0.6.1rc1
@@ -9,45 +12,65 @@ Summary:        Pretty Good Privacy for Python
 
 License:        BSD-3-Clause
 URL:            https://github.com/memory/PGPy
-Source:         %{pypi_source %{pypi_name}}
-
+Source0:        https://files.pythonhosted.org/packages/27/4a/49f87efd9c320d25b2edda4d9bda520607fbc12338cd1030468d830f29bb/pgpy13-0.6.1rc1.tar.gz
 BuildArch:      noarch
+
+%if 0%{?fedora}%{?rhel}
 BuildRequires:  python3-devel
-BuildRequires:  pyproject-rpm-macros
+BuildRequires:  python3dist(cryptography)
+BuildRequires:  python3dist(pyasn1)
+BuildRequires:  python3dist(setuptools)
+BuildRequires:  python3dist(pytest)
+%elif 0%{?suse_version}%{?sle_version}
+BuildRequires:  python3-devel
+BuildRequires:  python3-cryptography
+BuildRequires:  python3-pyasn1
+BuildRequires:  python3-setuptools
+BuildRequires:  python3-pytest
+%else
+%{error: unsupported distribution}
+%endif
 
-%py_provides %{package_name}
+%if 0%{?fedora}%{?rhel}
+Requires:       python-cryptography
+Requires:       python-pyasn1
+%elif 0%{?suse_version}%{?sle_version}
+Requires:       python3-cryptography
+Requires:       python3-pyasn1
+%else
+%{error: unsupported distribution}
+%endif
 
-%global _description %{expand:\
-PGPy is a Python library for implementing Pretty Good Privacy into Python programs,
-conforming to the OpenPGP specification per RFC 4880.}
+%description
+PGPy: Pretty Good Privacy for Python :target:
 
-%description %_description
-
-%package -n python3-%{package_name}
+%package -n     python3-%{package_name}
 Summary:        %{summary}
 
-%description -n python3-%{package_name} %_description
+%if 0%{?fedora}%{?rhel}
+%{?python_provide:%python_provide python3-%{package_name}}
+%elif 0%{?suse_version}%{?sle_version}
+%{?python_provide:%python_provide python313-%{package_name}}
+%else
+%{error: unsupported distribution}
+%endif
+
+%description -n python3-%{package_name}
+PGPy: Pretty Good Privacy for Python :target:
 
 %prep
-%autosetup -p1 -n %{pypi_name}-%{version}
-
-%generate_buildrequires
-%pyproject_buildrequires
+%autosetup -p1 -n pgpy13-%{pypi_version}
 
 %build
-%pyproject_wheel
+%py3_build
 
 %install
-%pyproject_install
-%pyproject_save_files %{package_name}
+%py3_install
 
-%check
-%pyproject_check_import
-# Currently disabled because legacy encrpytion is disabled
-# %pytest
-
-%files -n python3-%{package_name} -f %{pyproject_files}
-
+%files -n python3-%{package_name}
+%license LICENSE
+%doc README.rst
+%{python3_sitelib}/*
 
 %changelog
 * Sat Aug 23 2025 Aditya Garg <gargaditya08@live.com> - 0.6.1rc1-3
