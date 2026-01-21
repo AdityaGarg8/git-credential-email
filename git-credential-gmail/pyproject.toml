@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools >= 61", "setuptools-scm >= 8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "git-credential-gmail"
+dynamic = ["version"]
+description = "Git credential helper for GMail"
+requires-python = ">=3.10"
+authors=[{name = "Aditya Garg", email = "gargaditya08@live.com"}]
+dependencies = [
+  "keyring",
+  "requests"
+]
+license="Apache-2.0"
+
+[project.optional-dependencies]
+qr = ["qrcode"]
+qt = [
+  "PyQt6 >= 6.0",
+  "PyQt6-WebEngine >= 6.0"
+]
+
+[project.scripts]
+git-credential-gmail = "git_credential_gmail:main"
+
+[project.urls]
+Homepage = "https://gce.adityagarg.is-a.dev"
+Repository = "https://github.com/AdityaGarg8/git-credential-email"
+Issues = "https://github.com/AdityaGarg8/git-credential-email/issues"
+Funding = "https://www.buymeacoffee.com/gargadityav"
+
+[tool.setuptools_scm]
+root = "../.."

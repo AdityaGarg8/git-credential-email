@@ -22,6 +22,20 @@ jobs:
           tag: "v${{ github.event.inputs.version }}"
 
       - name: Release
+        id: publish
+        run: |
+          cp ${{ github.workspace }}/git-credential-outlook/src/git_credential_outlook/git-credential-outlook.py ${{ github.workspace }}
+          cp ${{ github.workspace }}/git-credential-gmail/src/git_credential_gmail/git-credential-gmail.py ${{ github.workspace }}
+          cp ${{ github.workspace }}/git-credential-yahoo/src/git_credential_yahoo/git-credential-yahoo.py ${{ github.workspace }}
+          cp ${{ github.workspace }}/git-credential-aol/src/git_credential_aol/git-credential-aol.py ${{ github.workspace }}
+          cp ${{ github.workspace }}/git-msgraph/src/git_msgraph/git-msgraph.py ${{ github.workspace }}
+          cp ${{ github.workspace }}/git-protonmail/src/git_protonmail/git-protonmail.py ${{ github.workspace }}
+          for i in git-credential-outlook git-credential-gmail git-credential-yahoo git-credential-aol git-msgraph git-protonmail
+          do
+            rm -rf ./$i
+            mv ./$i.py ./$i
+          done
+      - name: Release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
@@ -60,11 +74,17 @@ jobs:
           git checkout v${{ github.event.inputs.version }}
           cd ${{ github.workspace }}
 
+          cp ${{ github.workspace }}/git-credential-outlook/src/git_credential_outlook/git-credential-outlook.py ${{ github.workspace }}
+          cp ${{ github.workspace }}/git-credential-gmail/src/git_credential_gmail/git-credential-gmail.py ${{ github.workspace }}
+          cp ${{ github.workspace }}/git-credential-yahoo/src/git_credential_yahoo/git-credential-yahoo.py ${{ github.workspace }}
+          cp ${{ github.workspace }}/git-credential-aol/src/git_credential_aol/git-credential-aol.py ${{ github.workspace }}
+          cp ${{ github.workspace }}/git-msgraph/src/git_msgraph/git-msgraph.py ${{ github.workspace }}
+          cp ${{ github.workspace }}/git-protonmail/src/git_protonmail/git-protonmail.py ${{ github.workspace }}
           for i in git-credential-outlook git-credential-gmail git-credential-yahoo git-credential-aol git-msgraph git-protonmail
           do
             mkdir -p ${{ github.workspace }}/cred-$i/DEBIAN
             mkdir -p ${{ github.workspace }}/cred-$i/usr/bin
-            cp ./$i ./cred-$i/usr/bin
+            cp ./$i.py ./cred-$i/usr/bin/$i
           done
 
           cat <<EOF  > ./cred-git-credential-outlook/DEBIAN/control
@@ -218,7 +238,8 @@ jobs:
           %build
 
           %install
-          install -D -m0755 git-credential-outlook %{buildroot}%{_bindir}/git-credential-outlook
+          cd git-credential-outlook/src/git_credential_outlook
+          install -D -m0755 git-credential-outlook.py %{buildroot}%{_bindir}/git-credential-outlook
 
           %files
           %license LICENSE-APACHE NOTICE
@@ -262,7 +283,8 @@ jobs:
           %build
 
           %install
-          install -D -m0755 git-credential-gmail %{buildroot}%{_bindir}/git-credential-gmail
+          cd git-credential-gmail/src/git_credential_gmail
+          install -D -m0755 git-credential-gmail.py %{buildroot}%{_bindir}/git-credential-gmail
 
           %files
           %license LICENSE-APACHE NOTICE
@@ -306,7 +328,8 @@ jobs:
           %build
 
           %install
-          install -D -m0755 git-credential-yahoo %{buildroot}%{_bindir}/git-credential-yahoo
+          cd git-credential-yahoo/src/git_credential_yahoo
+          install -D -m0755 git-credential-yahoo.py %{buildroot}%{_bindir}/git-credential-yahoo
 
           %files
           %license LICENSE-APACHE NOTICE
@@ -350,7 +373,8 @@ jobs:
           %build
 
           %install
-          install -D -m0755 git-credential-aol %{buildroot}%{_bindir}/git-credential-aol
+          cd git-credential-aol/src/git_credential_aol
+          install -D -m0755 git-credential-aol.py %{buildroot}%{_bindir}/git-credential-aol
 
           %files
           %license LICENSE-APACHE NOTICE
@@ -394,7 +418,8 @@ jobs:
           %build
 
           %install
-          install -D -m0755 git-msgraph %{buildroot}%{_bindir}/git-msgraph
+          cd git-msgraph/src/git_msgraph
+          install -D -m0755 git-msgraph.py %{buildroot}%{_bindir}/git-msgraph
 
           %files
           %license LICENSE-APACHE NOTICE
@@ -452,7 +477,8 @@ jobs:
           %build
 
           %install
-          install -D -m0755 git-protonmail %{buildroot}%{_bindir}/git-protonmail
+          cd git-protonmail/src/git_protonmail
+          install -D -m0755 git-protonmail.py %{buildroot}%{_bindir}/git-protonmail
 
           %files
           %license LICENSE-GPL3
@@ -506,7 +532,19 @@ jobs:
             printf "builduser ALL=(ALL) ALL\n" | tee -a /etc/sudoers && \
             cp -r /repo/* /build && cat /repo/key | gpg --import && \
             cd /build && \
-
+            cp /build/git-credential-outlook/src/git_credential_outlook/git-credential-outlook.py /build && \
+            cp /build/git-credential-gmail/src/git_credential_gmail/git-credential-gmail.py /build && \
+            cp /build/git-credential-yahoo/src/git_credential_yahoo/git-credential-yahoo.py /build && \
+            cp /build/git-credential-aol/src/git_credential_aol/git-credential-aol.py /build && \
+            cp /build/git-msgraph/src/git_msgraph/git-msgraph.py /build && \
+            cp /build/git-protonmail/src/git_protonmail/git-protonmail.py /build && \
+            rm -rf /build/git-credential-outlook /build/git-credential-gmail /build/git-credential-yahoo /build/git-credential-aol /build/git-msgraph /build/git-protonmail && \
+            cp /build/git-credential-outlook.py /build/git-credential-outlook && \
+            cp /build/git-credential-gmail.py /build/git-credential-gmail && \
+            cp /build/git-credential-yahoo.py /build/git-credential-yahoo && \
+            cp /build/git-credential-aol.py /build/git-credential-aol && \
+            cp /build/git-msgraph.py /build/git-msgraph && \
+            cp /build/git-protonmail.py /build/git-protonmail && \
 
             echo "pkgname=git-credential-outlook" > PKGBUILD && \
             echo "pkgver=${VER}" >> PKGBUILD && \
@@ -674,33 +712,33 @@ jobs:
           New-Item -ItemType Directory -Path msgraph
           New-Item -ItemType Directory -Path protonmail
           pip install pyinstaller keyring requests qrcode
-          Copy-Item -Path .\git-credential-outlook -Destination .\outlook
-          Copy-Item -Path .\git-credential-gmail -Destination .\gmail
-          Copy-Item -Path .\git-credential-yahoo -Destination .\yahoo
-          Copy-Item -Path .\git-credential-aol -Destination .\aol
-          Copy-Item -Path .\git-msgraph -Destination .\msgraph
-          Copy-Item -Path .\git-protonmail -Destination .\protonmail
+          Copy-Item -Path .\git-credential-outlook\src\git_credential_outlook\git-credential-outlook.py -Destination .\outlook
+          Copy-Item -Path .\git-credential-gmail\src\git_credential_gmail\git-credential-gmail.py -Destination .\gmail
+          Copy-Item -Path .\git-credential-yahoo\src\git_credential_yahoo\git-credential-yahoo.py -Destination .\yahoo
+          Copy-Item -Path .\git-credential-aol\src\git_credential_aol\git-credential-aol.py -Destination .\aol
+          Copy-Item -Path .\git-msgraph\src\git_msgraph\git-msgraph.py -Destination .\msgraph
+          Copy-Item -Path .\git-protonmail\src\git_protonmail\git-protonmail.py -Destination .\protonmail
           cd outlook
-          pyinstaller git-credential-outlook --exclude-module PyQt6 --icon=NONE --contents-directory gco-resources
+          pyinstaller git-credential-outlook.py --exclude-module PyQt6 --icon=NONE --contents-directory gco-resources
           cd ..
           cd gmail
-          pyinstaller git-credential-gmail --exclude-module PyQt6 --icon=NONE --contents-directory gcg-resources
+          pyinstaller git-credential-gmail.py --exclude-module PyQt6 --icon=NONE --contents-directory gcg-resources
           cd ..
           cd yahoo
-          pyinstaller git-credential-yahoo --exclude-module PyQt6 --icon=NONE --contents-directory gcy-resources
+          pyinstaller git-credential-yahoo.py --exclude-module PyQt6 --icon=NONE --contents-directory gcy-resources
           cd ..
           cd aol
-          pyinstaller git-credential-aol --exclude-module PyQt6 --icon=NONE --contents-directory gca-resources
+          pyinstaller git-credential-aol.py --exclude-module PyQt6 --icon=NONE --contents-directory gca-resources
           cd ..
           cd msgraph
-          pyinstaller git-msgraph --exclude-module PyQt6 --icon=NONE --contents-directory gcm-resources
+          pyinstaller git-msgraph.py --exclude-module PyQt6 --icon=NONE --contents-directory gcm-resources
           cd ..
 
           pip install opencv-python-headless
           pip install bcrypt cryptography keyring PGPy13 requests requests-toolbelt typing-extensions
 
           cd protonmail
-          pyinstaller git-protonmail --exclude-module PyQt6 --icon=NONE --contents-directory gcp-resources
+          pyinstaller git-protonmail.py --exclude-module PyQt6 --icon=NONE --contents-directory gcp-resources
           cd ..
 
           Compress-Archive -Path .\outlook\dist\git-credential-outlook\* -DestinationPath git-credential-outlook_win64.zip

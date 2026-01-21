@@ -776,7 +776,7 @@ class User:
 			self.bytes_s,
 			long_to_bytes(pow(self.g, self.hashed_password, self.modulus_int), SRP_LEN_BYTES)
 		)
-	
+
 	def get_ephemeral_secret(self) -> bytes:
 		return long_to_bytes(self.random_int, SRP_LEN_BYTES)
 
@@ -1646,201 +1646,202 @@ def decrypt_file(filepath, key):
 	with open(filepath, "wb") as f:
 		f.write(decrypted)
 
-proton = ProtonMail()
+def main():
+	proton = ProtonMail()
 
-if os.name == "nt":
-	session_path = os.path.expanduser("~\\.git-protonmail.pickle")
-else:
-	session_path = os.path.expanduser("~/.git-protonmail.pickle")
-
-if "--authenticate" in sys.argv:
-	if "--alternate-auth" in sys.argv:
-		login_type = LoginType.WEB
+	if os.name == "nt":
+		session_path = os.path.expanduser("~\\.git-protonmail.pickle")
 	else:
-		login_type = LoginType.DEV
+		session_path = os.path.expanduser("~/.git-protonmail.pickle")
 
-	username = input("Enter your Proton Mail username: ")
-	password = getpass.getpass("Enter your Proton Mail password: ")
-
-	if os.path.exists(session_path):
-		failed = 0
-		print("\033[93mFound an existing session file\033[0m")
-		print("\033[93mAttempting to revoke the session\033[0m")
-		key = load_encryption_key()
-		try:
-			decrypt_file(session_path, key.encode())
-		except Exception:
-			print("\x1b[31mFailed to decrypt the session file. Session will not be revoked.\x1b[0m")
-			failed = 1
-		if failed == 0:
-			try:
-				proton.load_session(session_path, auto_save=True)
-				encrypt_file(session_path, key)
-				resp = proton.revoke_current_session()
-				code = resp.get('Code') if isinstance(resp, dict) else None
-				if code == 1000:
-					print("\x1b[32mSession revoked successfully\x1b[0m")
-				else:
-					print("\x1b[31mFailed to revoke session. Session may have already been revoked.\x1b[0m")
-			except Exception:
-				print("\x1b[31mFailed to load/revoke session. Session may have already been revoked.\x1b[0m")
-
-	try:
-		try:
-			i = 1
-			while i <= 5:
-				try:
-					proton = ProtonMail()
-					proton.login(username, password, login_type=login_type)
-					break
-				except CantSolveImageCaptcha as e:
-					i += 1
-					if i > 5:
-						raise CantSolveImageCaptcha(e)
-		except (CantSolveImageCaptcha, InvalidCaptcha, ImportError, AttributeError) as e:
-			try:
-				if isinstance(e, CantSolveImageCaptcha):
-					print("CAPTCHA auto solve failed. Attempting to open PyQt Web Browser to solve CAPTCHA.")
-					print("If you want to try auto solve again, cancel the login (Ctrl+C) and try again.")
-				elif isinstance(e, InvalidCaptcha):
-					print("CAPTCHA auto solved an invalid CAPTCHA. Attempting to open PyQt Web Browser to solve CAPTCHA.")
-					print("If you want to try auto solve again, cancel the login (Ctrl+C) and try again.")
-				elif isinstance(e, ImportError) or isinstance(e, AttributeError):
-					print("OpenCV and/or NumPy is not installed. Attempting to open PyQt Web Browser to solve CAPTCHA.")
-				proton = ProtonMail()
-				proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.PYQT))
-			except (InvalidCaptcha, ImportError, AttributeError) as e:
-				try:
-					if isinstance(e, InvalidCaptcha):
-						print("CAPTCHA was not solved properly. Falling back to manual mode.")
-						print("If you want to try with PyQt web browser again, cancel the login (Ctrl+C) and try again.")
-					elif isinstance(e, ImportError) or isinstance(e, AttributeError):
-						print("PyQt6-WebEngine is not installed. Falling back to manual mode.")
-						print("Alternatively cancel the process (Ctrl+c) and install PyQt6-WebEngine for easier CAPTCHA solving.")
-						print("You can also install OpenCV and NumPy for auto solving CAPTCHA.")
-					proton = ProtonMail()
-					proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.MANUAL))
-				except Exception as e:
-					sys.exit(f"\nAuthentication failed due to \"{e}\".")
-
-		proton.save_session(session_path)
-		key = generate_key()
-		encrypt_file(session_path, key)
-		save_encryption_key(key)
-	except Exception as e:
-		sys.exit(f"\nAuthentication failed due to \"{e}\".")
-
-elif "-i" in sys.argv:
-	if not os.path.exists(session_path):
-		sys.exit("No session file found.\nPlease authenticate first by running `git protonmail --authenticate`")
-	try:
-		key = load_encryption_key()
-		try:
-			decrypt_file(session_path, key.encode())
-		except Exception:
-			sys.exit("Failed to decrypt session file.\nAuthenticate again by running `git protonmail --authenticate` if you are getting this error multiple times.")
-		proton.load_session(session_path, auto_save=True)
-		encrypt_file(session_path, key)
-	except Exception as e:
-		sys.exit(f"Failed to load session file due to \"{e}\".\nAuthenticate again by running `git protonmail --authenticate` if you are getting this error multiple times.")
-
-	msg = message_from_file(sys.stdin)
-	parser = argparse.ArgumentParser()
-	parser.add_argument('-i', nargs='+', help='Recipient email addresses')
-	args, unknown = parser.parse_known_args()
-	recipients = args.i if args.i else []
-	cc = msg.get_all('Cc', [])
-	to = msg.get_all('To', [])
-	from_address = msg.get('From', '')
-	match = re.match(r'^(.*?)\s*<([^>]+)>$', from_address)
-	if match:
-		from_address = match.group(2).strip()
-	elif from_address.startswith('<') and from_address.endswith('>'):
-		from_address = from_address[1:-1]
-	to_addresses = [addr for name, addr in getaddresses(to)]
-	to_formatted = [f"{str(make_header(decode_header(name)))} <{email}>" if name else f"{email}" for name, email in getaddresses(to)]
-	cc_addresses = [addr for name, addr in getaddresses(cc)]
-	cc_formatted = [f"{str(make_header(decode_header(name)))} <{email}>" if name else f"{email}" for name, email in getaddresses(cc)]
-	bcc = [r for r in recipients if r not in to_addresses and r not in cc_addresses]
-	subject = msg.get('Subject', '')
-	body = msg.get_payload(decode=True)
-	if isinstance(body, bytes):
-		body = body.decode(errors='replace')
-	message_id = msg.get('Message-ID', '')
-	in_reply_to = msg.get('In-Reply-To', '')
-
-	# Send message
-	new_message = proton.create_message(
-		recipients=to_formatted,
-		cc=cc_formatted,
-		bcc=bcc,
-		subject=subject,
-		body=body,
-		external_id=message_id,
-		in_reply_to=in_reply_to,
-	)
-	sender_account = next(
-		(acc for acc in proton.account_addresses if acc.email == from_address),
-		None
-	)
-	if not sender_account:
-		print(f"\"From:\" address {from_address} is not valid.")
-		sys.exit(1)
-	try:
-		decrypt_file(session_path, key.encode()) # Decrypt session file again before sending since access token may get refreshed
-		proton.send_message(new_message, account_address=sender_account)
-		encrypt_file(session_path, key) # Encrypt session file again after sending
-	except Exception as e:
-		encrypt_file(session_path, key) # Encrypt session file if sending fails
-		print(f"Failed to send message due to \"{e}\".")
-		print("Make sure your \"From:\" address is valid and you have authenticated successfully.")
-		sys.exit("Try authenticating again by running `git protonmail --authenticate` if your session has expired or refresh token is invalid.")
-
-elif "--delete-session" in sys.argv:
-	exit_error = 0
-
-	try:
-		if not os.path.exists(session_path):
-			print("No session file found")
-			exit_error = 1
+	if "--authenticate" in sys.argv:
+		if "--alternate-auth" in sys.argv:
+			login_type = LoginType.WEB
 		else:
+			login_type = LoginType.DEV
+
+		username = input("Enter your Proton Mail username: ")
+		password = getpass.getpass("Enter your Proton Mail password: ")
+
+		if os.path.exists(session_path):
+			failed = 0
+			print("\033[93mFound an existing session file\033[0m")
+			print("\033[93mAttempting to revoke the session\033[0m")
 			key = load_encryption_key()
 			try:
 				decrypt_file(session_path, key.encode())
 			except Exception:
-				print("Failed to decrypt session file. Session will not be revoked.")
+				print("\x1b[31mFailed to decrypt the session file. Session will not be revoked.\x1b[0m")
+				failed = 1
+			if failed == 0:
+				try:
+					proton.load_session(session_path, auto_save=True)
+					encrypt_file(session_path, key)
+					resp = proton.revoke_current_session()
+					code = resp.get('Code') if isinstance(resp, dict) else None
+					if code == 1000:
+						print("\x1b[32mSession revoked successfully\x1b[0m")
+					else:
+						print("\x1b[31mFailed to revoke session. Session may have already been revoked.\x1b[0m")
+				except Exception:
+					print("\x1b[31mFailed to load/revoke session. Session may have already been revoked.\x1b[0m")
+
+		try:
+			try:
+				i = 1
+				while i <= 5:
+					try:
+						proton = ProtonMail()
+						proton.login(username, password, login_type=login_type)
+						break
+					except CantSolveImageCaptcha as e:
+						i += 1
+						if i > 5:
+							raise CantSolveImageCaptcha(e)
+			except (CantSolveImageCaptcha, InvalidCaptcha, ImportError, AttributeError) as e:
+				try:
+					if isinstance(e, CantSolveImageCaptcha):
+						print("CAPTCHA auto solve failed. Attempting to open PyQt Web Browser to solve CAPTCHA.")
+						print("If you want to try auto solve again, cancel the login (Ctrl+C) and try again.")
+					elif isinstance(e, InvalidCaptcha):
+						print("CAPTCHA auto solved an invalid CAPTCHA. Attempting to open PyQt Web Browser to solve CAPTCHA.")
+						print("If you want to try auto solve again, cancel the login (Ctrl+C) and try again.")
+					elif isinstance(e, ImportError) or isinstance(e, AttributeError):
+						print("OpenCV and/or NumPy is not installed. Attempting to open PyQt Web Browser to solve CAPTCHA.")
+					proton = ProtonMail()
+					proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.PYQT))
+				except (InvalidCaptcha, ImportError, AttributeError) as e:
+					try:
+						if isinstance(e, InvalidCaptcha):
+							print("CAPTCHA was not solved properly. Falling back to manual mode.")
+							print("If you want to try with PyQt web browser again, cancel the login (Ctrl+C) and try again.")
+						elif isinstance(e, ImportError) or isinstance(e, AttributeError):
+							print("PyQt6-WebEngine is not installed. Falling back to manual mode.")
+							print("Alternatively cancel the process (Ctrl+c) and install PyQt6-WebEngine for easier CAPTCHA solving.")
+							print("You can also install OpenCV and NumPy for auto solving CAPTCHA.")
+						proton = ProtonMail()
+						proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.MANUAL))
+					except Exception as e:
+						sys.exit(f"\nAuthentication failed due to \"{e}\".")
+
+			proton.save_session(session_path)
+			key = generate_key()
+			encrypt_file(session_path, key)
+			save_encryption_key(key)
+		except Exception as e:
+			sys.exit(f"\nAuthentication failed due to \"{e}\".")
+
+	elif "-i" in sys.argv:
+		if not os.path.exists(session_path):
+			sys.exit("No session file found.\nPlease authenticate first by running `git protonmail --authenticate`")
+		try:
+			key = load_encryption_key()
+			try:
+				decrypt_file(session_path, key.encode())
+			except Exception:
+				sys.exit("Failed to decrypt session file.\nAuthenticate again by running `git protonmail --authenticate` if you are getting this error multiple times.")
+			proton.load_session(session_path, auto_save=True)
+			encrypt_file(session_path, key)
+		except Exception as e:
+			sys.exit(f"Failed to load session file due to \"{e}\".\nAuthenticate again by running `git protonmail --authenticate` if you are getting this error multiple times.")
+
+		msg = message_from_file(sys.stdin)
+		parser = argparse.ArgumentParser()
+		parser.add_argument('-i', nargs='+', help='Recipient email addresses')
+		args, unknown = parser.parse_known_args()
+		recipients = args.i if args.i else []
+		cc = msg.get_all('Cc', [])
+		to = msg.get_all('To', [])
+		from_address = msg.get('From', '')
+		match = re.match(r'^(.*?)\s*<([^>]+)>$', from_address)
+		if match:
+			from_address = match.group(2).strip()
+		elif from_address.startswith('<') and from_address.endswith('>'):
+			from_address = from_address[1:-1]
+		to_addresses = [addr for name, addr in getaddresses(to)]
+		to_formatted = [f"{str(make_header(decode_header(name)))} <{email}>" if name else f"{email}" for name, email in getaddresses(to)]
+		cc_addresses = [addr for name, addr in getaddresses(cc)]
+		cc_formatted = [f"{str(make_header(decode_header(name)))} <{email}>" if name else f"{email}" for name, email in getaddresses(cc)]
+		bcc = [r for r in recipients if r not in to_addresses and r not in cc_addresses]
+		subject = msg.get('Subject', '')
+		body = msg.get_payload(decode=True)
+		if isinstance(body, bytes):
+			body = body.decode(errors='replace')
+		message_id = msg.get('Message-ID', '')
+		in_reply_to = msg.get('In-Reply-To', '')
+
+		# Send message
+		new_message = proton.create_message(
+			recipients=to_formatted,
+			cc=cc_formatted,
+			bcc=bcc,
+			subject=subject,
+			body=body,
+			external_id=message_id,
+			in_reply_to=in_reply_to,
+		)
+		sender_account = next(
+			(acc for acc in proton.account_addresses if acc.email == from_address),
+			None
+		)
+		if not sender_account:
+			print(f"\"From:\" address {from_address} is not valid.")
+			sys.exit(1)
+		try:
+			decrypt_file(session_path, key.encode()) # Decrypt session file again before sending since access token may get refreshed
+			proton.send_message(new_message, account_address=sender_account)
+			encrypt_file(session_path, key) # Encrypt session file again after sending
+		except Exception as e:
+			encrypt_file(session_path, key) # Encrypt session file if sending fails
+			print(f"Failed to send message due to \"{e}\".")
+			print("Make sure your \"From:\" address is valid and you have authenticated successfully.")
+			sys.exit("Try authenticating again by running `git protonmail --authenticate` if your session has expired or refresh token is invalid.")
+
+	elif "--delete-session" in sys.argv:
+		exit_error = 0
+
+		try:
+			if not os.path.exists(session_path):
+				print("No session file found")
 				exit_error = 1
-			if exit_error == 0:
-				proton.load_session(session_path, auto_save=True)
-				resp = proton.revoke_current_session()
-				code = resp.get('Code') if isinstance(resp, dict) else None
-				if code == 1000:
-					print("Session revoked successfully")
-				else:
-					print("Failed to revoke session. Session may have already been revoked.")
+			else:
+				key = load_encryption_key()
+				try:
+					decrypt_file(session_path, key.encode())
+				except Exception:
+					print("Failed to decrypt session file. Session will not be revoked.")
 					exit_error = 1
-	except Exception:
-		print("Failed to load/revoke session. Session may have already been revoked.")
-		exit_error = 1
+				if exit_error == 0:
+					proton.load_session(session_path, auto_save=True)
+					resp = proton.revoke_current_session()
+					code = resp.get('Code') if isinstance(resp, dict) else None
+					if code == 1000:
+						print("Session revoked successfully")
+					else:
+						print("Failed to revoke session. Session may have already been revoked.")
+						exit_error = 1
+		except Exception:
+			print("Failed to load/revoke session. Session may have already been revoked.")
+			exit_error = 1
 
-	try:
-		os.remove(session_path)
-		print("Session file deleted successfully")
-	except Exception:
-		if os.path.exists(session_path):
-			print("Failed to delete session file")
-		exit_error = 1
+		try:
+			os.remove(session_path)
+			print("Session file deleted successfully")
+		except Exception:
+			if os.path.exists(session_path):
+				print("Failed to delete session file")
+			exit_error = 1
 
-	try:
-		delete_encryption_key()
-		print("Encryption key deleted from keyring")
-	except keyring.errors.PasswordDeleteError:
-		print("No encryption key found in keyring")
-		exit_error = 1
-	
-	sys.exit(exit_error)
-else:
-	print("""
+		try:
+			delete_encryption_key()
+			print("Encryption key deleted from keyring")
+		except keyring.errors.PasswordDeleteError:
+			print("No encryption key found in keyring")
+			exit_error = 1
+
+		sys.exit(exit_error)
+	else:
+		print("""
 Usage: git protonmail [OPTIONS]
 
 Options:
@@ -1860,4 +1861,7 @@ Examples:
   Authenticate using the Proton Mail API:
     git protonmail --authenticate
 """)
-	sys.exit(0)
+		sys.exit(0)
+
+if __name__ == "__main__":
+	main()

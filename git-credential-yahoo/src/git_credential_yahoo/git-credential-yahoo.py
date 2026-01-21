@@ -1,0 +1,354 @@
+#!/usr/bin/env python3
+#
+# Copyright 2012 Google Inc.
+# Copyright 2025 Aditya Garg
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#	http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import sys
+import keyring
+import os
+import requests
+import time
+import urllib.parse
+
+# https://github.com/mozilla/releases-comm-central/blob/master/mailnews/base/src/OAuth2Providers.sys.mjs
+ClientId_Thunderbird = "dj0yJmk9NUtCTWFMNVpTaVJmJmQ9WVdrOVJ6UjVTa2xJTXpRbWNHbzlNQS0tJnM9Y29uc3VtZXJzZWNyZXQmeD0yYw--"
+ClientSecret_Thunderbird = "f2de6a30ae123cdbc258c15e0812799010d589cc"
+
+# https://gitlab.gnome.org/GNOME/evolution-data-server/-/commit/7554d3b95124486ac98d9a5052e069e46242a216
+ClientId_Evolution = "dj0yJmk9RHNlMGFKTXdkYzRXJmQ9WVdrOVNUUXpUWGhzWjJzbWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWNi"
+ClientSecret_Evolution = "35f49f199dd754ec5e86d3c7cd576a1341c9bc0b"
+
+ServiceName = "git-credential-yahoo"
+
+def save_refresh_token(refresh_token):
+	keyring.set_password(ServiceName, "refresh_token", refresh_token)
+
+def load_refresh_token():
+	return keyring.get_password(ServiceName, "refresh_token")
+
+def delete_refresh_token():
+	keyring.delete_password(ServiceName, "refresh_token")
+
+def save_access_token(access_token, expiry):
+	keyring.set_password(ServiceName, "access_token", access_token)
+	keyring.set_password(ServiceName, "access_token_expiry", expiry)
+
+def load_access_token():
+	return keyring.get_password(ServiceName, "access_token")
+
+def load_access_token_expiry():
+	return keyring.get_password(ServiceName, "access_token_expiry")
+
+def delete_access_token():
+	keyring.delete_password(ServiceName, "access_token")
+	keyring.delete_password(ServiceName, "access_token_expiry")
+
+def print_access_token(access_token):
+	if "get" in sys.argv:
+		print(f"password={access_token}")
+	else:
+		print(access_token)
+
+def set_client(client_id, client_secret):
+	keyring.set_password(ServiceName, "client_id", client_id)
+	keyring.set_password(ServiceName, "client_secret", client_secret)
+
+def load_client_id():
+	return keyring.get_password(ServiceName, "client_id")
+
+def load_client_secret():
+	return keyring.get_password(ServiceName, "client_secret")
+
+def delete_client():
+	keyring.delete_password(ServiceName, "client_id")
+	keyring.delete_password(ServiceName, "client_secret")
+
+def qr_encode(url):
+	try:
+		try:
+			import qrcode
+			qr = qrcode.QRCode(border=2)
+			qr.add_data(url)
+			qr.make(fit=True)
+			qr.print_ascii(invert=True)
+		except Exception:
+			headers = {'User-Agent': 'curl'}
+			url_qr = f"https://qrenco.de/{url}"
+			response = requests.get(url_qr, headers=headers)
+			response.raise_for_status()
+			content = response.text
+			print(content)
+	except Exception:
+		# let's not interrupt the process if qrenco.de is down
+		pass
+
+def get_code_from_url(url):
+	parsed_url = urllib.parse.urlparse(url)
+	parsed_query = urllib.parse.parse_qs(parsed_url.query)
+	return parsed_query.get('code', [''])[0]
+
+def AccountsUrl(command):
+	return '%s/%s' % ('https://api.login.yahoo.com', command)
+
+def UrlEscape(text):
+	return urllib.parse.quote(text, safe='~-._')
+
+def FormatUrlParams(params):
+	param_fragments = []
+	for param in sorted(params.items(), key=lambda x: x[0]):
+		param_fragments.append('%s=%s' % (param[0], UrlEscape(param[1])))
+	return '&'.join(param_fragments)
+
+def GeneratePermissionUrl(redirect_uri):
+	params = {}
+	params['client_id'] = ClientId
+	params['redirect_uri'] = redirect_uri
+	params['response_type'] = 'code'
+	return '%s?%s' % (AccountsUrl('oauth2/request_auth'), FormatUrlParams(params))
+
+def AuthorizeTokens(authorization_code):
+	params = {}
+	params['client_id'] = ClientId
+	params['client_secret'] = ClientSecret
+	params['code'] = authorization_code
+	params['redirect_uri'] = redirect_uri
+	params['grant_type'] = 'authorization_code'
+	request_url = AccountsUrl('oauth2/get_token')
+
+	try:
+		response = requests.post(request_url, data=params)
+		response.raise_for_status()
+		return response.json()
+	except requests.exceptions.HTTPError:
+		print(f"HTTP Error {response.status_code}: {response.reason}")
+		print("Response Body:", response.text)
+		sys.exit("\nFailed to get refresh token due to an HTTP error.")
+	except Exception as e:
+		print(f"Unexpected error: {e}")
+		sys.exit("\nFailed to get refresh token due to an unexpected error.")
+
+def RefreshToken(refresh_token):
+	params = {}
+	params['client_id'] = ClientId
+	params['client_secret'] = ClientSecret
+	params['refresh_token'] = refresh_token
+	params['grant_type'] = 'refresh_token'
+	request_url = AccountsUrl('oauth2/get_token')
+
+	try:
+		response = requests.post(request_url, data=params)
+		response.raise_for_status()
+		return response.json()
+	except requests.exceptions.HTTPError:
+		print(f"HTTP Error {response.status_code}: {response.reason}")
+		print("Response Body:", response.text)
+		sys.exit("\nFailed to get access token due to an HTTP error.\nTry running `git credential-yahoo --authenticate` to get a new refresh token.")
+	except Exception as e:
+		print(f"Unexpected error: {e}")
+		sys.exit("\nFailed to get access token due to an unexpected error.\nTry running `git credential-yahoo --authenticate` to get a new refresh token.")
+
+def main():
+	if "--help" in sys.argv:
+		print("""
+Usage: git-credential-yahoo [OPTIONS]
+
+Options:
+  --help                 * Show this help message and exit.
+  --set-client           * Set the client details to use for authentication.
+  --delete-client        * Delete the client details set using --set-client.
+  --authenticate         * Authenticate with Yahoo using OAuth2.
+      --external-auth    * Authenticate using an external browser.
+                           Use this option with --authenticate.
+  --force-refresh-token  * Force refresh the access token.
+  --delete-token         * Delete the credentials saved using --authenticate.
+
+Description:
+  This script allows you to authenticate with Yahoo using OAuth2 and
+  retrieve access tokens for use with IMAP, POP, and SMTP protocols.
+
+Examples:
+  Authenticate using the browser-based flow:
+    git-credential-yahoo --authenticate
+""")
+		sys.exit(0)
+
+	ClientId = load_client_id()
+	ClientSecret = load_client_secret()
+	if ClientId is None or ClientSecret is None:
+		ClientId = ClientId_Thunderbird
+		ClientSecret = ClientSecret_Thunderbird
+
+	if "--set-client" in sys.argv:
+		print("What client details do you want to use?\n")
+		print("1. Thunderbird")
+		print("2. GNOME Evolution")
+		print("3. Use your own custom client details")
+		answer = input("\nType the number of your choice and press enter: ")
+
+		if answer == "1":
+			ClientId = ClientId_Thunderbird
+			ClientSecret = ClientSecret_Thunderbird
+		elif answer == "2":
+			ClientId = ClientId_Evolution
+			ClientSecret = ClientSecret_Evolution
+		elif answer == "3":
+			ClientId = input("\nEnter the Client ID: ")
+			ClientSecret = input("Enter the Client Secret: ")
+		else:
+			sys.exit("\nInvalid choice")
+
+		set_client(ClientId, ClientSecret)
+		print("\nClient details saved to keyring")
+
+	elif "--delete-client" in sys.argv:
+		try:
+			delete_client()
+			print("Client details deleted from keyring")
+		except keyring.errors.PasswordDeleteError:
+			sys.exit("No client details found in keyring")
+
+	elif "--authenticate" in sys.argv:
+		redirect_uri = "oob"
+		url = GeneratePermissionUrl(redirect_uri)
+		code = ''
+
+		if "--external-auth" in sys.argv:
+			# Use external browser for authentication
+			qr_encode(url)
+			print("Navigate to the following URL in a web browser:\n")
+			print(url)
+			print("\nAfter login, you will be redirected to a page displaying a code.")
+			codeurl = input("Type the code here: ")
+			code = codeurl
+			print()
+		else:
+			print("Opening a browser window for authentication...\n")
+			try:
+				from PyQt6.QtWidgets import QApplication, QMainWindow
+				from PyQt6.QtWebEngineWidgets import QWebEngineView
+				from PyQt6.QtWebEngineCore import QWebEnginePage
+				from PyQt6.QtCore import QUrl, QLoggingCategory
+				qt_available = True
+			except Exception:
+				import webbrowser
+				qt_available = False
+
+			if qt_available:
+				if "--verbose" in sys.argv:
+					loglevel = 0
+				else:
+					loglevel = 3
+					QLoggingCategory("qt.webenginecontext").setFilterRules("*.info=false") # Suppress info logs
+
+				os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = f"--enable-logging --log-level={loglevel}"
+
+				class QuietWebEnginePage(QWebEnginePage):
+					#js messages spam the console for no reason
+					def javaScriptConsoleMessage(self, level, message, lineNumber, sourceID):
+						return
+
+				class BrowserWindow(QMainWindow):
+
+					def handle_url_change(self, url):
+						if "code=" in url.toString():
+							global code
+							code = get_code_from_url(url.toString())
+							self.close()
+
+					def __init__(self):
+						super().__init__()
+						self.setWindowTitle("OAuth2 Login")
+						self.resize(800, 600)
+						self.browser = QWebEngineView()
+						if not "--verbose" in sys.argv:
+							self.browser.setPage(QuietWebEnginePage(self.browser))
+						self.setCentralWidget(self.browser)
+						self.browser.load(QUrl(url))
+						self.browser.urlChanged.connect(self.handle_url_change)
+						self.show()
+
+				webapp = QApplication(sys.argv)
+				window = BrowserWindow()
+				webapp.exec()
+			else:
+				webbrowser.open(url)
+				print("Authenticate in the browser window that opened.\nAfter login, you will be redirected to a page displaying a code.")
+				codeurl = input("Type the code here: ")
+				code = codeurl
+				print()
+
+		token = AuthorizeTokens(code)
+
+		if 'error' in token:
+			print(token)
+			sys.exit("\nFailed to get refresh token")
+
+		save_refresh_token(token['refresh_token'])
+		try:
+			delete_access_token()
+		except keyring.errors.PasswordDeleteError:
+			pass
+		print('Saved refresh token to keyring')
+
+	elif "--delete-token" in sys.argv:
+		exit_error = 0
+		try:
+			delete_refresh_token()
+			print("Refresh token deleted from keyring")
+		except keyring.errors.PasswordDeleteError:
+			print("No refresh token found in keyring")
+			exit_error = 1
+
+		try:
+			delete_access_token()
+			print("Access token deleted from keyring")
+		except keyring.errors.PasswordDeleteError:
+			print("No access token found in keyring")
+			exit_error = 1
+
+		sys.exit(exit_error)
+
+	else:
+		need_new_access_token = False
+		access_token = load_access_token()
+		access_token_expiry = load_access_token_expiry()
+
+		if access_token is None or access_token_expiry is None or (int(access_token_expiry) - int(time.time())) <= 0 or "--force-refresh-token" in sys.argv:
+			need_new_access_token = True
+
+		if need_new_access_token:
+			# Lets use the refresh token to get a new access token
+			refresh_token = load_refresh_token()
+
+			if refresh_token is None:
+				sys.exit("No refresh token found.\nPlease authenticate first by running `git credential-yahoo --authenticate`")
+
+			token = RefreshToken(refresh_token)
+
+			if 'error' in token:
+				print(token)
+				sys.exit("Failed to get access token from the server")
+			else:
+				access_token = token['access_token']
+				access_token_expiry = int(time.time()) + int(token['expires_in']) - 120 # Subtract 2 minutes to ensure we never get an expired token
+				try: # Some credential helpers hate such long access tokens (looking at you Windows). Still we can refresh the token right ;)
+					save_access_token(access_token, str(access_token_expiry))
+				except Exception:
+					pass
+
+		print_access_token(access_token)
+
+if __name__ == "__main__":
+	main()

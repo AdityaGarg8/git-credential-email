@@ -16,36 +16,6 @@
 # limitations under the License.
 
 import sys
-
-if "--help" in sys.argv:
-	print("""
-Usage: git-credential-outlook [OPTIONS]
-
-Options:
-  --help                 * Show this help message and exit.
-  --set-client           * Set the client details to use for authentication.
-  --delete-client        * Delete the client details set using --set-client.
-  --authenticate         * Authenticate with Outlook using OAuth2.
-      --device           * Use device code flow for authentication.
-                           Use this option with --authenticate.
-      --external-auth    * Authenticate using an external browser.
-                           Use this option with --authenticate.
-  --force-refresh-token  * Force refresh the access token.
-  --delete-token         * Delete the credentials saved using --authenticate.
-
-Description:
-  This script allows you to authenticate with Outlook using OAuth2 and
-  retrieve access tokens for use with IMAP, POP, and SMTP protocols.
-
-Examples:
-  Authenticate using the browser-based flow:
-    git-credential-outlook --authenticate
-
-  Authenticate using the device code flow:
-    git-credential-outlook --authenticate --device
-""")
-	sys.exit(0)
-
 import keyring
 import os
 import requests
@@ -252,197 +222,229 @@ def get_code_from_device_flow(open_browser=False):
 		print(f"Visit {device_flow['verification_uri']} on a web browser.\nEnter this code when asked to do so: \033[1m{device_flow['user_code']}\033[0m\n")
 	return PollDeviceToken(device_flow['device_code'])
 
-ClientId = load_client_id()
-Redirect_URI = load_redirect_uri()
+def main():
+	if "--help" in sys.argv:
+		print("""
+Usage: git-credential-outlook [OPTIONS]
 
-if ClientId is None:
-	ClientId = ClientId_Thunderbird
-	Redirect_URI = Redirect_URI_Thunderbird
+Options:
+  --help                 * Show this help message and exit.
+  --set-client           * Set the client details to use for authentication.
+  --delete-client        * Delete the client details set using --set-client.
+  --authenticate         * Authenticate with Outlook using OAuth2.
+      --device           * Use device code flow for authentication.
+                           Use this option with --authenticate.
+      --external-auth    * Authenticate using an external browser.
+                           Use this option with --authenticate.
+  --force-refresh-token  * Force refresh the access token.
+  --delete-token         * Delete the credentials saved using --authenticate.
 
-elif Redirect_URI is None:
-	Redirect_URI = 'https://login.microsoftonline.com/common/oauth2/nativeclient'
+Description:
+  This script allows you to authenticate with Outlook using OAuth2 and
+  retrieve access tokens for use with IMAP, POP, and SMTP protocols.
 
-if "--set-client" in sys.argv:
-	print("What client details do you want to use?\n")
-	print("1. Thunderbird")
-	print("2. GNOME Evolution")
-	print("3. GNOME Online Accounts")
-	print("4. Use your own custom client details")
-	answer = input("\nType the number of your choice and press enter: ")
+Examples:
+  Authenticate using the browser-based flow:
+    git-credential-outlook --authenticate
 
-	if answer == "1":
+  Authenticate using the device code flow:
+    git-credential-outlook --authenticate --device
+""")
+		sys.exit(0)
+
+	ClientId = load_client_id()
+	Redirect_URI = load_redirect_uri()
+
+	if ClientId is None:
 		ClientId = ClientId_Thunderbird
 		Redirect_URI = Redirect_URI_Thunderbird
-	elif answer == "2":
-		ClientId = ClientId_Evolution
-		Redirect_URI = Redirect_URI_Evolution
-	elif answer == "3":
-		ClientId = ClientId_Gnome
-		Redirect_URI = Redirect_URI_Gnome
-	elif answer == "4":
-		ClientId = input("\nEnter the Client ID: ")
-		Redirect_URI = input("Enter the Redirect URI: ")
-	else:
-		sys.exit("\nInvalid choice")
 
-	set_client(ClientId, Redirect_URI)
-	print("\nClient details saved to keyring")
+	elif Redirect_URI is None:
+		Redirect_URI = 'https://login.microsoftonline.com/common/oauth2/nativeclient'
 
-elif "--delete-client" in sys.argv:
-	try:
-		delete_client()
-		print("Client details deleted from keyring")
-	except keyring.errors.PasswordDeleteError:
-		sys.exit("No client details found in keyring")
+	if "--set-client" in sys.argv:
+		print("What client details do you want to use?\n")
+		print("1. Thunderbird")
+		print("2. GNOME Evolution")
+		print("3. GNOME Online Accounts")
+		print("4. Use your own custom client details")
+		answer = input("\nType the number of your choice and press enter: ")
 
-elif "--authenticate" in sys.argv:
-	if "--device" in sys.argv:
-		token = get_code_from_device_flow()
-	else:
-		Redirect_URI_is_http = 'false'
-		if Redirect_URI.startswith('http://') or Redirect_URI.startswith('https://'):
-			Redirect_URI_is_http = 'true'
-		url = GeneratePermissionUrl(Redirect_URI)
-		code = ''
-
-		if "--external-auth" in sys.argv:
-			# Use external browser for authentication
-			qr_encode(url)
-			print("Navigate to the following URL in a web browser:\n")
-			print(url)
-			if Redirect_URI_is_http == 'true':
-				print("\nAfter login, you will be redirected to a blank or error page.")
-				codeurl = input("Copy the URL of that page and paste it here:\n")
-			else:
-				print("\nThis client uses a non-http redirect URI.")
-				print("Before login enable network logging in your browser.")
-				print("After login, check the network logs for a URL with \"code\" in it.")
-				codeurl = input("Copy that URL and paste it here:\n")
-			code = get_code_from_url(codeurl)
-			token = AuthorizeTokens(code)
-			print()
-
+		if answer == "1":
+			ClientId = ClientId_Thunderbird
+			Redirect_URI = Redirect_URI_Thunderbird
+		elif answer == "2":
+			ClientId = ClientId_Evolution
+			Redirect_URI = Redirect_URI_Evolution
+		elif answer == "3":
+			ClientId = ClientId_Gnome
+			Redirect_URI = Redirect_URI_Gnome
+		elif answer == "4":
+			ClientId = input("\nEnter the Client ID: ")
+			Redirect_URI = input("Enter the Redirect URI: ")
 		else:
-			print("Opening a browser window for authentication...\n")
-			if Redirect_URI_is_http == 'true': # NEED HELP: How to intercept non http urls in PyQt6?
-				try:
-					from PyQt6.QtWidgets import QApplication, QMainWindow
-					from PyQt6.QtWebEngineWidgets import QWebEngineView
-					from PyQt6.QtCore import QUrl, QLoggingCategory
-					qt_available = True
-				except Exception:
+			sys.exit("\nInvalid choice")
+
+		set_client(ClientId, Redirect_URI)
+		print("\nClient details saved to keyring")
+
+	elif "--delete-client" in sys.argv:
+		try:
+			delete_client()
+			print("Client details deleted from keyring")
+		except keyring.errors.PasswordDeleteError:
+			sys.exit("No client details found in keyring")
+
+	elif "--authenticate" in sys.argv:
+		if "--device" in sys.argv:
+			token = get_code_from_device_flow()
+		else:
+			Redirect_URI_is_http = 'false'
+			if Redirect_URI.startswith('http://') or Redirect_URI.startswith('https://'):
+				Redirect_URI_is_http = 'true'
+			url = GeneratePermissionUrl(Redirect_URI)
+			code = ''
+
+			if "--external-auth" in sys.argv:
+				# Use external browser for authentication
+				qr_encode(url)
+				print("Navigate to the following URL in a web browser:\n")
+				print(url)
+				if Redirect_URI_is_http == 'true':
+					print("\nAfter login, you will be redirected to a blank or error page.")
+					codeurl = input("Copy the URL of that page and paste it here:\n")
+				else:
+					print("\nThis client uses a non-http redirect URI.")
+					print("Before login enable network logging in your browser.")
+					print("After login, check the network logs for a URL with \"code\" in it.")
+					codeurl = input("Copy that URL and paste it here:\n")
+				code = get_code_from_url(codeurl)
+				token = AuthorizeTokens(code)
+				print()
+
+			else:
+				print("Opening a browser window for authentication...\n")
+				if Redirect_URI_is_http == 'true': # NEED HELP: How to intercept non http urls in PyQt6?
+					try:
+						from PyQt6.QtWidgets import QApplication, QMainWindow
+						from PyQt6.QtWebEngineWidgets import QWebEngineView
+						from PyQt6.QtCore import QUrl, QLoggingCategory
+						qt_available = True
+					except Exception:
+						import webbrowser
+						qt_available = False
+				else:
 					import webbrowser
 					qt_available = False
-			else:
-				import webbrowser
-				qt_available = False
 
-			if qt_available:
-				if "--verbose" in sys.argv:
-					loglevel = 0
-				else:
-					loglevel = 3
-					QLoggingCategory("qt.webenginecontext").setFilterRules("*.info=false") # Suppress info logs
-
-				os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = f"--enable-logging --log-level={loglevel}"
-
-				class BrowserWindow(QMainWindow):
-
-					def handle_url_change(self, url):
-						if "code=" in url.toString():
-							global code
-							code = get_code_from_url(url.toString())
-							self.close()
-
-					def __init__(self):
-						super().__init__()
-						self.setWindowTitle("OAuth2 Login")
-						self.resize(800, 600)
-						self.browser = QWebEngineView()
-						self.setCentralWidget(self.browser)
-						self.browser.load(QUrl(url))
-						self.browser.urlChanged.connect(self.handle_url_change)
-						self.show()
-
-				webapp = QApplication(sys.argv)
-				window = BrowserWindow()
-				webapp.exec()
-				token = AuthorizeTokens(code)
-			else:
-				try:
-					# Lets try to use device code flow first
-					token = get_code_from_device_flow(open_browser=True)
-				except Exception:
-					webbrowser.open(url)
-					print("Authenticate in the browser window that opened.")
-					if Redirect_URI_is_http == 'true':
-						print("After login, you will be redirected to a blank or error page.")
-						codeurl = input("Copy the URL of that page and paste it here:\n")
+				if qt_available:
+					if "--verbose" in sys.argv:
+						loglevel = 0
 					else:
-						print("This client uses a non-http redirect URI.")
-						print("Before login enable network logging in your browser.")
-						print("After login, check the network logs for a URL with \"code\" in it.")
-						codeurl = input("Copy that URL and paste it here:\n")
-					code = get_code_from_url(codeurl)
-					print()
+						loglevel = 3
+						QLoggingCategory("qt.webenginecontext").setFilterRules("*.info=false") # Suppress info logs
+
+					os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = f"--enable-logging --log-level={loglevel}"
+
+					class BrowserWindow(QMainWindow):
+
+						def handle_url_change(self, url):
+							if "code=" in url.toString():
+								global code
+								code = get_code_from_url(url.toString())
+								self.close()
+
+						def __init__(self):
+							super().__init__()
+							self.setWindowTitle("OAuth2 Login")
+							self.resize(800, 600)
+							self.browser = QWebEngineView()
+							self.setCentralWidget(self.browser)
+							self.browser.load(QUrl(url))
+							self.browser.urlChanged.connect(self.handle_url_change)
+							self.show()
+
+					webapp = QApplication(sys.argv)
+					window = BrowserWindow()
+					webapp.exec()
 					token = AuthorizeTokens(code)
-
-	if 'error' in token:
-		print(token)
-		sys.exit("\nFailed to get refresh token")
-
-	save_refresh_token(token['refresh_token'])
-	try:
-		delete_access_token()
-	except keyring.errors.PasswordDeleteError:
-		pass
-	print('Saved refresh token to keyring')
-
-elif "--delete-token" in sys.argv:
-	exit_error = 0
-	try:
-		delete_refresh_token()
-		print("Refresh token deleted from keyring")
-	except keyring.errors.PasswordDeleteError:
-		print("No refresh token found in keyring")
-		exit_error = 1
-
-	try:
-		delete_access_token()
-		print("Access token deleted from keyring")
-	except keyring.errors.PasswordDeleteError:
-		print("No access token found in keyring")
-		exit_error = 1
-
-	sys.exit(exit_error)
-
-else:
-	need_new_access_token = False
-	access_token = load_access_token()
-	access_token_expiry = load_access_token_expiry()
-
-	if access_token is None or access_token_expiry is None or (int(access_token_expiry) - int(time.time())) <= 0 or "--force-refresh-token" in sys.argv:
-		need_new_access_token = True
-
-	if need_new_access_token:
-		# Lets use the refresh token to get a new access token
-		refresh_token = load_refresh_token()
-
-		if refresh_token is None:
-			sys.exit("No refresh token found.\nPlease authenticate first by running `git credential-outlook --authenticate`")
-
-		token = RefreshToken(refresh_token)
+				else:
+					try:
+						# Lets try to use device code flow first
+						token = get_code_from_device_flow(open_browser=True)
+					except Exception:
+						webbrowser.open(url)
+						print("Authenticate in the browser window that opened.")
+						if Redirect_URI_is_http == 'true':
+							print("After login, you will be redirected to a blank or error page.")
+							codeurl = input("Copy the URL of that page and paste it here:\n")
+						else:
+							print("This client uses a non-http redirect URI.")
+							print("Before login enable network logging in your browser.")
+							print("After login, check the network logs for a URL with \"code\" in it.")
+							codeurl = input("Copy that URL and paste it here:\n")
+						code = get_code_from_url(codeurl)
+						print()
+						token = AuthorizeTokens(code)
 
 		if 'error' in token:
 			print(token)
-			sys.exit("Failed to get access token from the server")
-		else:
-			access_token = token['access_token']
-			access_token_expiry = int(time.time()) + int(token['expires_in']) - 120 # Subtract 2 minutes to ensure we never get an expired token
-			try: # Some credential helpers hate such long access tokens (looking at you Windows). Still we can refresh the token right ;)
-				save_access_token(access_token, str(access_token_expiry))
-			except Exception:
-				pass
+			sys.exit("\nFailed to get refresh token")
 
-	print_access_token(access_token)
+		save_refresh_token(token['refresh_token'])
+		try:
+			delete_access_token()
+		except keyring.errors.PasswordDeleteError:
+			pass
+		print('Saved refresh token to keyring')
 
+	elif "--delete-token" in sys.argv:
+		exit_error = 0
+		try:
+			delete_refresh_token()
+			print("Refresh token deleted from keyring")
+		except keyring.errors.PasswordDeleteError:
+			print("No refresh token found in keyring")
+			exit_error = 1
+
+		try:
+			delete_access_token()
+			print("Access token deleted from keyring")
+		except keyring.errors.PasswordDeleteError:
+			print("No access token found in keyring")
+			exit_error = 1
+
+		sys.exit(exit_error)
+
+	else:
+		need_new_access_token = False
+		access_token = load_access_token()
+		access_token_expiry = load_access_token_expiry()
+
+		if access_token is None or access_token_expiry is None or (int(access_token_expiry) - int(time.time())) <= 0 or "--force-refresh-token" in sys.argv:
+			need_new_access_token = True
+
+		if need_new_access_token:
+			# Lets use the refresh token to get a new access token
+			refresh_token = load_refresh_token()
+
+			if refresh_token is None:
+				sys.exit("No refresh token found.\nPlease authenticate first by running `git credential-outlook --authenticate`")
+
+			token = RefreshToken(refresh_token)
+
+			if 'error' in token:
+				print(token)
+				sys.exit("Failed to get access token from the server")
+			else:
+				access_token = token['access_token']
+				access_token_expiry = int(time.time()) + int(token['expires_in']) - 120 # Subtract 2 minutes to ensure we never get an expired token
+				try: # Some credential helpers hate such long access tokens (looking at you Windows). Still we can refresh the token right ;)
+					save_access_token(access_token, str(access_token_expiry))
+				except Exception:
+					pass
+
+		print_access_token(access_token)
+
+if __name__ == "__main__":
+	main()
