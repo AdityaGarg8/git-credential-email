@@ -1,11 +1,11 @@
 Name:           git-msgraph
-Version:        5.5.4
+Version:        5.6.1
 Release:        1%{?dist}
 Summary:        Git helper to use Microsoft Graph API instead of SMTP to send emails
 
 License:        Apache-2.0
 URL:            https://github.com/AdityaGarg8/git-credential-email
-Source0:        %{url}/archive/refs/tags/v5.5.4.tar.gz
+Source0:        %{url}/archive/refs/tags/v5.6.1.tar.gz
 
 BuildArch:      noarch
 Requires:       git-email
@@ -28,7 +28,7 @@ Suggests:       python3-PyQt6-WebEngine
 Git helper to use Microsoft Graph API instead of SMTP to send emails
 
 %prep
-%autosetup -n git-credential-email-5.5.4
+%autosetup -n git-credential-email-5.6.1
 
 %build
 
