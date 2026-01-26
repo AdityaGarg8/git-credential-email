@@ -1,0 +1,45 @@
+---
+name: Cleanup repos
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Cleanup:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: 'Get the key'
+        run: wget https://raw.githubusercontent.com/AdityaGarg8/t2-ubuntu-repo/refs/heads/main/KEY.gpg
+
+      - uses: larryjoelane/delete-release-action@v1.0.24
+        with:
+          release-name: 'debian'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ github.workspace }}/KEY.gpg
+          tag_name: debian
+          body: Apt repo
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: larryjoelane/delete-release-action@v1.0.24
+        with:
+          release-name: 'archlinux'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ github.workspace }}/KEY.gpg
+          tag_name: archlinux
+          body: Pacman repo
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
