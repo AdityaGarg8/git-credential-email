@@ -14,7 +14,7 @@ jobs:
 
       - uses: liudonghua123/delete-release-action@v1
         with:
-          release-name: 'debian'
+          release_name: 'debian'
           #token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release
@@ -30,7 +30,7 @@ jobs:
 
       - uses: liudonghua123/delete-release-action@v1
         with:
-          release-name: 'archlinux'
+          release_name: 'archlinux'
           #token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release
