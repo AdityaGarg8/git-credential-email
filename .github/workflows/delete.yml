@@ -12,11 +12,6 @@ jobs:
       - name: 'Get the key'
         run: wget https://raw.githubusercontent.com/AdityaGarg8/t2-ubuntu-repo/refs/heads/main/KEY.gpg
 
-      - uses: liudonghua123/delete-release-action@v1
-        with:
-          release_name: 'debian'
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
@@ -27,11 +22,6 @@ jobs:
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: liudonghua123/delete-release-action@v1
-        with:
-          release_name: 'archlinux'
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release
         uses: softprops/action-gh-release@v2
