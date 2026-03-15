@@ -144,7 +144,6 @@ jobs:
           Priority: optional
           Depends: git-email, python3-bcrypt, python3-cryptography, python3-keyring, python3-pgpy, python3-pyasn1, python3-requests, python3-requests-toolbelt, python3-typing-extensions
           Recommends: python3-pyqt6.qtwebengine
-          Suggests: python3-opencv, python3-numpy
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
@@ -425,8 +424,6 @@ jobs:
           Requires:       python-requests-toolbelt
           Requires:       python-typing-extensions
           Recommends:     python-pyqt6-webengine
-          Suggests:       python-opencv
-          Suggests:       python-numpy
           %elif 0%{?suse_version}%{?sle_version}
           Requires:       python3-bcrypt
           Requires:       python3-cryptography
@@ -437,8 +434,6 @@ jobs:
           Requires:       python3-requests-toolbelt
           Requires:       python3-typing-extensions
           Recommends:     python3-PyQt6-WebEngine
-          Suggests:       python3-opencv
-          Suggests:       python3-numpy
           %else
           %{error: unsupported distribution}
           %endif
@@ -596,7 +591,7 @@ jobs:
             echo "url=\"https://github.com/AdityaGarg8/git-credential-email\"" >> PKGBUILD && \
             echo "license=(\"GPL-3.0-only\")" >> PKGBUILD && \
             echo "depends=(\"git\" \"perl-authen-sasl\" \"perl-io-socket-ssl\" \"python-bcrypt\" \"python-cryptography\" \"python-keyring\" \"python-pgpy\" \"python-pyasn1\" \"python-requests\" \"python-requests-toolbelt\" \"python-typing_extensions\")" >> PKGBUILD && \
-            echo "optdepends=(\"python-opencv: For auto-solving CAPTCHA\" \"python-numpy: For auto-solving CAPTCHA\" \"python-pyqt6-webengine: For easier manual CAPTCHA solving\")" >> PKGBUILD && \
+            echo "optdepends=(\"python-pyqt6-webengine: For easier manual CAPTCHA solving\")" >> PKGBUILD && \
             echo "source=(\"\$pkgname\")" >> PKGBUILD && \
             echo "sha256sums=(\"SKIP\")" >> PKGBUILD && \
             echo "package() {" >> PKGBUILD && \
@@ -673,6 +668,7 @@ jobs:
           New-Item -ItemType Directory -Path aol
           New-Item -ItemType Directory -Path msgraph
           New-Item -ItemType Directory -Path protonmail
+          New-Item -ItemType Directory -Path protonmail_lite
           pip install pyinstaller keyring requests qrcode
           Copy-Item -Path .\git-credential-outlook -Destination .\outlook
           Copy-Item -Path .\git-credential-gmail -Destination .\gmail
@@ -680,6 +676,7 @@ jobs:
           Copy-Item -Path .\git-credential-aol -Destination .\aol
           Copy-Item -Path .\git-msgraph -Destination .\msgraph
           Copy-Item -Path .\git-protonmail -Destination .\protonmail
+          Copy-Item -Path .\git-protonmail -Destination .\protonmail_lite
           cd outlook
           pyinstaller git-credential-outlook --exclude-module PyQt6 --icon=NONE --contents-directory gco-resources
           cd ..
@@ -696,11 +693,15 @@ jobs:
           pyinstaller git-msgraph --exclude-module PyQt6 --icon=NONE --contents-directory gcm-resources
           cd ..
 
-          pip install opencv-python-headless
           pip install bcrypt cryptography keyring PGPy13 requests requests-toolbelt typing-extensions
 
+          cd protonmail_lite
+          pyinstaller git-protonmail --exclude-module PyQt6 --icon=NONE --contents-directory gcpl-resources
+          cd ..
+
+          pip install PyQt6-WebEngine
           cd protonmail
-          pyinstaller git-protonmail --exclude-module PyQt6 --icon=NONE --contents-directory gcp-resources
+          pyinstaller git-protonmail --icon=NONE --contents-directory gcp-resources
           cd ..
 
           Compress-Archive -Path .\outlook\dist\git-credential-outlook\* -DestinationPath git-credential-outlook_win64.zip
@@ -709,6 +710,8 @@ jobs:
           Compress-Archive -Path .\aol\dist\git-credential-aol\* -DestinationPath git-credential-aol_win64.zip
           Compress-Archive -Path .\msgraph\dist\git-msgraph\* -DestinationPath git-msgraph_win64.zip
           Compress-Archive -Path .\protonmail\dist\git-protonmail\* -DestinationPath git-protonmail_win64.zip
+          Compress-Archive -Path .\protonmail_lite\dist\git-protonmail\* -DestinationPath git-protonmail_lite_win64.zip
+
       - name: Release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2

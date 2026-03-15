@@ -266,15 +266,13 @@ class CaptchaConfig:
 		CAPTCHA solve type
 
 		Attributes:
-			AUTO: Attempt fully automatic CAPTCHA solution. It does not guarantee the result, sometimes it is necessary to run several times.
 			MANUAL: Manual CAPTCHA solution. Requires additional actions from you, read more: https://github.com/opulentfox-29/protonmail-api-client?tab=readme-ov-file#solve-captcha
 			PYQT: Use PyQt6 web browser to solve CAPTCHA.
 		"""
-		AUTO = 'auto'
 		MANUAL = 'manual'
 		PYQT = 'pyqt'
 
-	type: CaptchaType = CaptchaType.AUTO
+	type: CaptchaType = CaptchaType.PYQT
 	function_for_manual: Callable = default_function_for_manual_solve_captcha
 	function_for_pyqt: Callable = default_function_for_pyqt_solve_captcha
 
@@ -783,60 +781,6 @@ class User:
 	def get_session_key(self) -> Union[bytes, None]:
 		return self.session_key if self._authenticated else None
 
-"""
-Utils for auto solve CAPTCHA downloaded from the other repository:
-https://github.com/gravilk/protonmail-documented/
-
-Modified here:
-https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/utils/captcha_auto_solver_utils.py
-"""
-
-N_LEADING_ZEROS_REQUIRED = 13
-X_OFFSET = -27  # Puzzle offsets are static. It was found by trial and error
-Y_OFFSET = -34
-
-
-def solve_challenge(challenge: str) -> int:
-	"""Solve CAPTCHA challenge"""
-	curr = 0
-	while True:
-		input_str = f'{curr}{challenge}'
-		result = hashlib.sha256(input_str.encode()).hexdigest()
-
-		j = (N_LEADING_ZEROS_REQUIRED + 3) // 4
-		k = result[:j]
-		l = int(k, 16)
-
-		if l < 2 ** (4 * j - N_LEADING_ZEROS_REQUIRED):
-			return curr
-		else:
-			curr += 1
-
-
-def get_captcha_puzzle_coordinates(image_bytes: bytes) -> Optional[tuple[int, int]]:
-	"""Get CAPTCHA puzzle coordinates"""
-	import cv2
-	import numpy as np
-
-	np_array = np.frombuffer(image_bytes, np.uint8)
-	img = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
-	img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-
-	_, thresh = cv2.threshold(img_gray, 190, 255, cv2.THRESH_BINARY_INV)
-	contours, hierarchy = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-	hierarchy = hierarchy[0]
-
-	for contour, sub_hierarchy in zip(contours, hierarchy):
-		if sub_hierarchy[2] > 0 or sub_hierarchy[3] > 0:
-			continue
-		area = cv2.contourArea(contour)
-		if 1700 < area < 1800:
-			moments = cv2.moments(contour)
-			coordinate_x = int(moments['m10'] / moments['m00']) + X_OFFSET
-			coordinate_y = int(moments['m01'] / moments['m00']) + Y_OFFSET
-			return coordinate_x, coordinate_y
-	return None
-
 """Client for Proton Mail API
 https://github.com/opulentfox-29/protonmail-api-client/blob/master/src/protonmail/client.py
 """
@@ -878,7 +822,7 @@ class ProtonMail:
 		:type getter_2fa_code: ``callable``
 		:param login_type: Type for login, dev - simple login, fewer requests but maybe often CAPTCHA, web - more requests, CAPTCHA like in web. default: WEB
 		:type login_type: ``Enum: LoginType``
-		:param captcha_config: Config for CAPTCHA resolver (auto, manual or pyqt). Default: auto. More: https://github.com/opulentfox-29/protonmail-api-client?tab=readme-ov-file#solve-captcha
+		:param captcha_config: Config for CAPTCHA resolver (manual or pyqt). Default: pyqt. More: https://github.com/opulentfox-29/protonmail-api-client?tab=readme-ov-file#solve-captcha
 		:type login_type: ``CaptchaConfig``
 		:returns: :py:obj:`None`
 		"""
@@ -1317,10 +1261,7 @@ class ProtonMail:
 		send_token_func = re.search(r"return sendToken\((.*?)\);", js_captcha).group(1)
 		sub_token = ''.join(re.findall(r"'([^']+)'", send_token_func))
 
-		if captcha_config.type == CaptchaConfig.CaptchaType.AUTO:
-			proved_token = self._captcha_auto_solving(captcha_token)
-			self.logger.info("CAPTCHA auto solved", "green")
-		elif captcha_config.type == CaptchaConfig.CaptchaType.PYQT:
+		if captcha_config.type == CaptchaConfig.CaptchaType.PYQT:
 			proved_token = captcha_config.function_for_pyqt(auth)
 			self.logger.info("CAPTCHA solved", "green")
 		else:
@@ -1331,55 +1272,6 @@ class ProtonMail:
 
 		self.session.headers['x-pm-human-verification-token-type'] = 'captcha'
 		self.session.headers['x-pm-human-verification-token'] = hvt_token
-
-	def _captcha_auto_solving(self, captcha_token: str) -> str:
-
-		""" Auto solve CAPTCHA. """
-		params = {
-			'challengeType': '2D',
-			'parentURL': f'https://account-api.proton.me/core/v4/captcha?Token={captcha_token}&ForceWebMessaging=1',
-			'displayedLang': 'en',
-			'supportedLangs': 'en,en,en,en',
-			'purpose': 'login',
-			'token': captcha_token,
-		}
-		init_data = self._get('account-api', 'captcha/v1/api/init', params=params).json()
-
-		params = {
-			'token': init_data['token']
-		}
-		image_captcha = self._get('account-api', 'captcha/v1/api/bg', params=params).content
-
-		puzzle_coordinates = get_captcha_puzzle_coordinates(image_captcha)
-		if puzzle_coordinates is None:
-			raise CantSolveImageCaptcha("Maybe this image is hard, just retry login or use manual CAPTCHA solver")
-
-		answers = [solve_challenge(challenge) for challenge in init_data['challenges']]
-
-		captcha_object = {
-			'x': puzzle_coordinates[0],
-			'y': puzzle_coordinates[1],
-			'answers': answers,
-			'clientData': None,
-			'pieceLoadElapsedMs': 140,
-			'bgLoadElapsedMs': 180,
-			'challengeLoadElapsedMs': 180,
-			'solveChallengeMs': 5000,
-			'powElapsedMs': 540
-		}
-		pcaptcha = json.dumps(captcha_object)
-		self.session.headers['pcaptcha'] = pcaptcha
-
-		params = {
-			'token': init_data['token'],
-			'contestId': init_data['contestId'],
-			'purpose': 'login'
-		}
-		validated = self._get('account-api', 'captcha/v1/api/validate', params=params)
-		if validated.status_code != 200:
-			raise InvalidCaptcha(f"Validate CAPTCHA returns code: {validated.status_code}")
-
-		return init_data['token']
 
 	def _login_process(self, auth: dict) -> bool:
 		if auth["Code"] not in (1000, 1001):
@@ -1687,41 +1579,20 @@ if "--authenticate" in sys.argv:
 
 	try:
 		try:
-			i = 1
-			while i <= 5:
-				try:
-					proton = ProtonMail()
-					proton.login(username, password, login_type=login_type)
-					break
-				except CantSolveImageCaptcha as e:
-					i += 1
-					if i > 5:
-						raise CantSolveImageCaptcha(e)
-		except (CantSolveImageCaptcha, InvalidCaptcha, ImportError, AttributeError) as e:
+			proton = ProtonMail()
+			proton.login(username, password, login_type=login_type)
+		except (InvalidCaptcha, ImportError, AttributeError) as e:
 			try:
-				if isinstance(e, CantSolveImageCaptcha):
-					print("CAPTCHA auto solve failed. Attempting to open PyQt Web Browser to solve CAPTCHA.")
-					print("If you want to try auto solve again, cancel the login (Ctrl+C) and try again.")
-				elif isinstance(e, InvalidCaptcha):
-					print("CAPTCHA auto solved an invalid CAPTCHA. Attempting to open PyQt Web Browser to solve CAPTCHA.")
-					print("If you want to try auto solve again, cancel the login (Ctrl+C) and try again.")
+				if isinstance(e, InvalidCaptcha):
+					print("CAPTCHA was not solved properly. Falling back to manual mode.")
+					print("If you want to try with PyQt web browser again, cancel the login (Ctrl+C) and try again.")
 				elif isinstance(e, ImportError) or isinstance(e, AttributeError):
-					print("OpenCV and/or NumPy is not installed. Attempting to open PyQt Web Browser to solve CAPTCHA.")
+					print("PyQt6-WebEngine is not installed. Falling back to manual mode.")
+					print("Alternatively cancel the process (Ctrl+c) and install PyQt6-WebEngine for easier CAPTCHA solving.")
 				proton = ProtonMail()
-				proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.PYQT))
-			except (InvalidCaptcha, ImportError, AttributeError) as e:
-				try:
-					if isinstance(e, InvalidCaptcha):
-						print("CAPTCHA was not solved properly. Falling back to manual mode.")
-						print("If you want to try with PyQt web browser again, cancel the login (Ctrl+C) and try again.")
-					elif isinstance(e, ImportError) or isinstance(e, AttributeError):
-						print("PyQt6-WebEngine is not installed. Falling back to manual mode.")
-						print("Alternatively cancel the process (Ctrl+c) and install PyQt6-WebEngine for easier CAPTCHA solving.")
-						print("You can also install OpenCV and NumPy for auto solving CAPTCHA.")
-					proton = ProtonMail()
-					proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.MANUAL))
-				except Exception as e:
-					sys.exit(f"\nAuthentication failed due to \"{e}\".")
+				proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.MANUAL))
+			except Exception as e:
+				sys.exit(f"\nAuthentication failed due to \"{e}\".")
 
 		proton.save_session(session_path)
 		key = generate_key()
