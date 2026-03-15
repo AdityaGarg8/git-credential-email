@@ -132,6 +132,8 @@ curl -L -o %temp%\cred.zip https://github.com/AdityaGarg8/git-credential-email/r
 tar -xf %temp%\cred.zip -C "%ProgramFiles%\Git\mingw64\libexec\git-core"
 ```
 
+For `git-protonmail`, two Windows packages are available: 1. `git-protonmail_win64.zip` and 2. `git-protonmail_lite_win64.zip`. The lite version does not contain `PyQt6-WebEngine` to help solving CAPTCHA, but is also much smaller in size. See [this section](#solving-captcha-while-authenticating-in-proton-mail) to know more about CAPTCHA in Proton Mail.
+
 ## Setting up OAuth 2.0 client credentials
 
 **You can skip this section if you are using Proton Mail**
