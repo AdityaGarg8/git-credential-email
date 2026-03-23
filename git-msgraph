@@ -387,7 +387,7 @@ elif "--authenticate" in sys.argv:
 				class Page(QWebEnginePage):
 
 					def acceptNavigationRequest(self, url: QUrl, nav_type, is_main_frame: bool) -> bool:
-						if "code=" in url.toString():
+						if "code=" in url.toString() and url.toString().startswith(Redirect_URI):
 							global code
 							code = get_code_from_url(url.toString())
 							QApplication.instance().quit()
