@@ -1,11 +1,11 @@
 Name:           git-protonmail
-Version:        5.7.1
+Version:        5.8
 Release:        1%{?dist}
 Summary:        Git helper to use ProtonMail API to send emails
 
 License:        GPL-3.0-only
 URL:            https://github.com/AdityaGarg8/git-credential-email
-Source0:        %{url}/archive/refs/tags/v5.7.1.tar.gz
+Source0:        %{url}/archive/refs/tags/v5.8.tar.gz
 
 BuildArch:      noarch
 Requires:       git-email
@@ -38,7 +38,7 @@ Recommends:     python3-PyQt6-WebEngine
 Git helper to use ProtonMail API to send emails
 
 %prep
-%autosetup -n git-credential-email-5.7.1
+%autosetup -n git-credential-email-5.8
 
 %build
 
