@@ -275,9 +275,7 @@ if "--set-client" in sys.argv:
 	print("2. GNOME Evolution")
 	print("3. GNOME Online Accounts")
 	print("4. FairEmail")
-	print("5. FairEmail (alt 1)")
-	print("6. FairEmail (alt 2)")
-	print("7. Use your own custom client details")
+	print("5. Use your own custom client details")
 	answer = input("\nType the number of your choice and press enter: ")
 
 	if answer == "1":
@@ -290,15 +288,21 @@ if "--set-client" in sys.argv:
 		ClientId = ClientId_Gnome
 		Redirect_URI = Redirect_URI_Gnome
 	elif answer == "4":
-		ClientId = ClientId_FairEmail_1
-		Redirect_URI = Redirect_URI_FairEmail_1
+		print("\nThis client provides multiple client IDs. Choose any one:\n")
+		print("1. Default")
+		print("2. Alternative 1")
+		print("3. Alternative 2")
+		answer_alt = input("\nType the number of your choice and press enter: ")
+		if answer_alt == "1":
+			ClientId = ClientId_FairEmail_1
+			Redirect_URI = Redirect_URI_FairEmail_1
+		elif answer_alt == "2":
+			ClientId = ClientId_FairEmail_2
+			Redirect_URI = Redirect_URI_FairEmail_2
+		elif answer_alt == "3":
+			ClientId = ClientId_FairEmail_3
+			Redirect_URI = Redirect_URI_FairEmail_3
 	elif answer == "5":
-		ClientId = ClientId_FairEmail_2
-		Redirect_URI = Redirect_URI_FairEmail_2
-	elif answer == "6":
-		ClientId = ClientId_FairEmail_3
-		Redirect_URI = Redirect_URI_FairEmail_3
-	elif answer == "7":
 		ClientId = input("\nEnter the Client ID: ")
 		Redirect_URI = input("Enter the Redirect URI: ")
 	else:
