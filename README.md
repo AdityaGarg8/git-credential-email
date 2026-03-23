@@ -157,7 +157,7 @@ git credential-gmail --set-client
 
 Here you can either choose from the pre-configured client credentials, or choose to use your own registered client. Instructions for registering your own client are given below:
 
-- Gmail: You can register a [Google API desktop app client](https://developers.google.com/identity/protocols/oauth2/native-app) and use its client credentials.
+- Gmail: You can register a [Google API desktop app client](https://developers.google.com/identity/protocols/oauth2/native-app) and use its client credentials. Note that `git-credential-gmail` supports client credentials of only **Desktop apps** for OAuth2.0.
 - Outlook: If you are part of the Microsoft 365 Developer Programme or have an Azure account (including free accounts), you can create your own app registration in the [Entra admin centre](https://learn.microsoft.com/entra/identity-platform/quickstart-register-app). Make sure you also set a **Redirect URI**, since in case of Outlook, you also need to specify that when setting the client. It is also recommended to enable device flow for your client if you want to use the `--device` option. If you cannot create your own app registration, use client credentials of any email client.
 - Yahoo and AOL: Currently no option to register your own client is available. You will have to use client credentials of any email client.
 
