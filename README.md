@@ -147,6 +147,7 @@ The helpers include the client credentials of the following popular email client
 - Thunderbird
 - GNOME Evolution (only available for Gmail, Outlook and Yahoo)
 - GNOME Online Accounts (only available for Gmail and Outlook)
+- FairEmail (only available for Outlook, Yahoo and AOL)
 
 In order to set the client credentials of your choice, run (taking `git credential-gmail` as an example):
 
