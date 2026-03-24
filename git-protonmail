@@ -1574,7 +1574,7 @@ if "--authenticate" in sys.argv:
 					print("If you want to try with PyQt web browser again, cancel the login (Ctrl+C) and try again.")
 				elif isinstance(e, ImportError) or isinstance(e, AttributeError):
 					print("PyQt6-WebEngine is not installed. Falling back to manual mode.")
-					print("Alternatively cancel the process (Ctrl+c) and install PyQt6-WebEngine for easier CAPTCHA solving.")
+					print("Alternatively cancel the process (Ctrl+C) and install PyQt6-WebEngine for easier CAPTCHA solving.")
 				proton = ProtonMail()
 				proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.MANUAL))
 			except Exception as e:
