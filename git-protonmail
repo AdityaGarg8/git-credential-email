@@ -206,14 +206,20 @@ def get_token_from_url(url):
 	return parsed_query.get('token', [''])[0]
 
 def default_function_for_pyqt_solve_captcha(auth_data: dict) -> str:
-	"""Default function to solve CAPTCHA using PyQt web browser"""
+	"""Default function to solve CAPTCHA using Qt WebEngine"""
 
 	import os
 	import sys
-	from PyQt6.QtWidgets import QApplication, QMainWindow
-	from PyQt6.QtWebEngineWidgets import QWebEngineView
-	from PyQt6.QtWebEngineCore import QWebEngineUrlRequestInterceptor, QWebEngineProfile, QWebEnginePage
-	from PyQt6.QtCore import QUrl, QLoggingCategory
+	try:
+		from PyQt6.QtWidgets import QApplication, QMainWindow
+		from PyQt6.QtWebEngineWidgets import QWebEngineView
+		from PyQt6.QtWebEngineCore import QWebEngineUrlRequestInterceptor, QWebEngineProfile, QWebEnginePage
+		from PyQt6.QtCore import QUrl, QLoggingCategory
+	except Exception:
+		from PySide6.QtWidgets import QApplication, QMainWindow
+		from PySide6.QtWebEngineWidgets import QWebEngineView
+		from PySide6.QtWebEngineCore import QWebEngineUrlRequestInterceptor, QWebEngineProfile, QWebEnginePage
+		from PySide6.QtCore import QUrl, QLoggingCategory
 
 	QLoggingCategory("qt.webenginecontext").setFilterRules("*.info=false")
 	os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = f"--enable-logging --log-level=3"
@@ -267,7 +273,7 @@ class CaptchaConfig:
 
 		Attributes:
 			MANUAL: Manual CAPTCHA solution. Requires additional actions from you, read more: https://github.com/opulentfox-29/protonmail-api-client?tab=readme-ov-file#solve-captcha
-			PYQT: Use PyQt6 web browser to solve CAPTCHA.
+			PYQT: Use Qt6 WebEngine to solve CAPTCHA.
 		"""
 		MANUAL = 'manual'
 		PYQT = 'pyqt'
@@ -1571,10 +1577,10 @@ if "--authenticate" in sys.argv:
 			try:
 				if isinstance(e, InvalidCaptcha):
 					print("CAPTCHA was not solved properly. Falling back to manual mode.")
-					print("If you want to try with PyQt web browser again, cancel the login (Ctrl+C) and try again.")
+					print("If you want to try with Qt web browser again, cancel the login (Ctrl+C) and try again.")
 				elif isinstance(e, ImportError) or isinstance(e, AttributeError):
-					print("PyQt6-WebEngine is not installed. Falling back to manual mode.")
-					print("Alternatively cancel the process (Ctrl+C) and install PyQt6-WebEngine for easier CAPTCHA solving.")
+					print("Neither PyQt6-WebEngine nor PySide6 is installed. Falling back to manual mode.")
+					print("Alternatively cancel the process (Ctrl+C) and install either PyQt6-WebEngine or PySide6 for easier CAPTCHA solving.")
 				proton = ProtonMail()
 				proton.login(username, password, login_type=login_type, captcha_config=CaptchaConfig(type=CaptchaConfig.CaptchaType.MANUAL))
 			except Exception as e:

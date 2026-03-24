@@ -283,16 +283,18 @@ Microsoft Graph API can be used instead of Outlook's SMTP server to send emails.
 
 There is a high chance that you will be asked to solve a CAPTCHA when you try to authenticate for Proton Mail. The on-screen instructions should be followed while solving the CAPTCHA.
 
-For an easier CAPTCHA solving experience, you can install `PyQt6-WebEngine`.
+For an easier CAPTCHA solving experience, you can install either `PyQt6-WebEngine` or `PySide6`.
 
-`PyQt6-WebEngine` will open a dedicated broswer window for solving CAPTCHA for you to solve and send the solved CAPTCHA to the credential helper. It occupies around 100-200MBs depending on your OS.
+Both `PyQt6-WebEngine` and `PySide6` will open a dedicated broswer window for solving CAPTCHA for you to solve and send the solved CAPTCHA to the credential helper. Each occupies around 100-200MBs depending on your OS. You just need to install any one out of both of them.
 
 You can install it by running:
 
-- For all platforms: `pip install PyQt6-WebEngine`
-- Ubuntu/Debian: `sudo apt-get install -y python3-pyqt6.qtwebengine`
-- Fedora: `sudo dnf install -y python-pyqt6-webengine`
-- macOS: `brew install pyqt@6`
+| Platform        | PyQt6 WebEngine                                     | PySide6                                               |
+|-----------------|-----------------------------------------------------|-------------------------------------------------------|
+| All platforms   | `pip install PyQt6-WebEngine`                       | `pip install PySide6`                                 |
+| Ubuntu/Debian   | `sudo apt-get install -y python3-pyqt6.qtwebengine` | `sudo apt-get install -y pyside6`                     |
+| Fedora          | `sudo dnf install -y python-pyqt6-webengine`        | `sudo dnf install -y python-pyside6`                  |
+| macOS (Homebrew)| `brew install pyqt@6`                               | `brew install pyside@6`                               |
 
 ## Usage
 
