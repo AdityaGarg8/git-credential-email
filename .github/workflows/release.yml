@@ -696,12 +696,12 @@ jobs:
           pip install bcrypt cryptography keyring PGPy13 requests requests-toolbelt typing-extensions
 
           cd protonmail_lite
-          pyinstaller git-protonmail --exclude-module PyQt6 --icon=NONE --contents-directory gcpl-resources
+          pyinstaller git-protonmail --exclude-module PyQt6 --exclude-module PySide6 --icon=NONE --contents-directory gcpl-resources
           cd ..
 
           pip install PyQt6-WebEngine
           cd protonmail
-          pyinstaller git-protonmail --icon=NONE --contents-directory gcp-resources
+          pyinstaller git-protonmail --exclude-module PySide6 --icon=NONE --contents-directory gcp-resources
           cd ..
 
           Compress-Archive -Path .\outlook\dist\git-credential-outlook\* -DestinationPath git-credential-outlook_win64.zip
