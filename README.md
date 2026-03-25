@@ -294,6 +294,7 @@ You can install it by running:
 | All platforms   | `pip install PyQt6-WebEngine`                       | `pip install PySide6`                                        |
 | Ubuntu/Debian   | `sudo apt-get install -y python3-pyqt6.qtwebengine` | `sudo apt-get install -y python3-pyside6.qtwebenginewidgets` |
 | Fedora          | `sudo dnf install -y python-pyqt6-webengine`        | `sudo dnf install -y python-pyside6`                         |
+| Arch Linux      | `sudo pacman -Sy python-pyqt6-webengine`            | `sudo pacman -Sy pyside6 qt6-webengine                       |
 | macOS (Homebrew)| `brew install pyqt@6`                               | `brew install pyside@6`                                      |
 
 ## Usage
