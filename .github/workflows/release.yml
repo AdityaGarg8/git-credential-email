@@ -74,7 +74,7 @@ jobs:
           Priority: optional
           Depends: git-email, python3-keyring, python3-requests
           Recommends: python3-qrcode
-          Suggests: python3-pyqt6.qtwebengine
+          Suggests: python3-pyqt6.qtwebengine | python3-pyside6.qtwebenginewidgets
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
@@ -88,7 +88,7 @@ jobs:
           Priority: optional
           Depends: git-email, python3-keyring, python3-requests
           Recommends: python3-qrcode
-          Suggests: python3-pyqt6.qtwebengine
+          Suggests: python3-pyqt6.qtwebengine | python3-pyside6.qtwebenginewidgets
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
@@ -102,7 +102,7 @@ jobs:
           Priority: optional
           Depends: git-email, python3-keyring, python3-requests
           Recommends: python3-qrcode
-          Suggests: python3-pyqt6.qtwebengine
+          Suggests: python3-pyqt6.qtwebengine | python3-pyside6.qtwebenginewidgets
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
@@ -116,7 +116,7 @@ jobs:
           Priority: optional
           Depends: git-email, python3-keyring, python3-requests
           Recommends: python3-qrcode
-          Suggests: python3-pyqt6.qtwebengine
+          Suggests: python3-pyqt6.qtwebengine | python3-pyside6.qtwebenginewidgets
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
@@ -130,7 +130,7 @@ jobs:
           Priority: optional
           Depends: git-email, python3-keyring, python3-requests
           Recommends: python3-qrcode
-          Suggests: python3-pyqt6.qtwebengine
+          Suggests: python3-pyqt6.qtwebengine | python3-pyside6.qtwebenginewidgets
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
@@ -143,7 +143,7 @@ jobs:
           Section: utils
           Priority: optional
           Depends: git-email, python3-bcrypt, python3-cryptography, python3-keyring, python3-pgpy, python3-pyasn1, python3-requests, python3-requests-toolbelt, python3-typing-extensions
-          Recommends: python3-pyqt6.qtwebengine
+          Recommends: python3-pyqt6.qtwebengine | python3-pyside6.qtwebenginewidgets
           Enhances: git-email
           Architecture: all
           Maintainer: Aditya Garg <gargaditya08@live.com>
