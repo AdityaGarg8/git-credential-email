@@ -285,7 +285,7 @@ There is a high chance that you will be asked to solve a CAPTCHA when you try to
 
 For an easier CAPTCHA solving experience, you can install either `PyQt6-WebEngine` or `PySide6`.
 
-Both `PyQt6-WebEngine` and `PySide6` will open a dedicated broswer window for solving CAPTCHA for you to solve and send the solved CAPTCHA to the credential helper. Each occupies around 100-200MBs depending on your OS. You just need to install any one out of both of them.
+Both `PyQt6-WebEngine` and `PySide6` will open a dedicated broswer window for solving CAPTCHA for you to solve and send the solved CAPTCHA to the credential helper. Each occupies around 100-300MBs depending on your OS. You just need to install any one out of both of them.
 
 You can install it by running:
 
