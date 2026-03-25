@@ -289,12 +289,12 @@ Both `PyQt6-WebEngine` and `PySide6` will open a dedicated broswer window for so
 
 You can install it by running:
 
-| Platform        | PyQt6 WebEngine                                     | PySide6                                                                                      |
-|-----------------|-----------------------------------------------------|----------------------------------------------------------------------------------------------|
-| All platforms   | `pip install PyQt6-WebEngine`                       | `pip install PySide6`                                                                        |
-| Ubuntu/Debian   | `sudo apt-get install -y python3-pyqt6.qtwebengine` | `sudo apt-get install -y python3-pyside6.qtwebenginecore python3-pyside6.qtwebenginewidgets` |
-| Fedora          | `sudo dnf install -y python-pyqt6-webengine`        | `sudo dnf install -y python-pyside6`                                                         |
-| macOS (Homebrew)| `brew install pyqt@6`                               | `brew install pyside@6`                                                                      |
+| Platform        | PyQt6 WebEngine                                     | PySide6                                                      |
+|-----------------|-----------------------------------------------------|--------------------------------------------------------------|
+| All platforms   | `pip install PyQt6-WebEngine`                       | `pip install PySide6`                                        |
+| Ubuntu/Debian   | `sudo apt-get install -y python3-pyqt6.qtwebengine` | `sudo apt-get install -y python3-pyside6.qtwebenginewidgets` |
+| Fedora          | `sudo dnf install -y python-pyqt6-webengine`        | `sudo dnf install -y python-pyside6`                         |
+| macOS (Homebrew)| `brew install pyqt@6`                               | `brew install pyside@6`                                      |
 
 ## Usage
 
