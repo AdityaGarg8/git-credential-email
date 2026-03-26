@@ -56,8 +56,8 @@ curl -L "https://github.com/AdityaGarg8/git-credential-email/releases/download/d
 	&& echo "deb [signed-by=/etc/apt/trusted.gpg.d/git-credential-email.gpg] \
 	https://github.com/AdityaGarg8/git-credential-email/releases/download/debian ./" \
 	| sudo tee -a /etc/apt/sources.list.d/git-credential-email.list \
-	&& sudo apt-get update \
-	&& sudo apt-get install -y git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
+	&& sudo apt update \
+	&& sudo apt install -y git-credential-gmail git-credential-outlook git-credential-yahoo git-credential-aol git-msgraph git-protonmail
 ```
 
 #### Fedora
@@ -289,13 +289,14 @@ Both `PyQt6-WebEngine` and `PySide6` will open a dedicated broswer window for so
 
 You can install it by running:
 
-| Platform        | PyQt6 WebEngine                                     | PySide6                                                      |
-|-----------------|-----------------------------------------------------|--------------------------------------------------------------|
-| All platforms   | `pip install PyQt6-WebEngine`                       | `pip install PySide6`                                        |
-| Ubuntu/Debian   | `sudo apt-get install -y python3-pyqt6.qtwebengine` | `sudo apt-get install -y python3-pyside6.qtwebenginewidgets` |
-| Fedora          | `sudo dnf install -y python-pyqt6-webengine`        | `sudo dnf install -y python-pyside6`                         |
-| Arch Linux      | `sudo pacman -Sy python-pyqt6-webengine`            | `sudo pacman -Sy pyside6 qt6-webengine`                      |
-| macOS (Homebrew)| `brew install pyqt@6`                               | `brew install pyside@6`                                      |
+| Platform            | PyQt6 WebEngine                                  | PySide6                                                  |
+|---------------------|--------------------------------------------------|----------------------------------------------------------|
+| All platforms       | `pip install PyQt6-WebEngine`                    | `pip install PySide6`                                    |
+| Ubuntu/Debian       | `sudo apt install -y python3-pyqt6.qtwebengine`  | `sudo apt install -y python3-pyside6.qtwebenginewidgets` |
+| Fedora              | `sudo dnf install -y python-pyqt6-webengine`     | `sudo dnf install -y python-pyside6`                     |
+| Arch Linux          | `sudo pacman -Sy python-pyqt6-webengine`         | `sudo pacman -Sy pyside6 qt6-webengine`                  |
+| OpenSUSE Tumbleweed | `sudo zypper install -y python3-PyQt6-WebEngine` | `sudo zypper install -y python3-pyside6`                 |
+| macOS (Homebrew)    | `brew install pyqt@6`                            | `brew install pyside@6`                                  |
 
 ## Usage
 
