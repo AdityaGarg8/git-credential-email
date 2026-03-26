@@ -678,19 +678,19 @@ jobs:
           Copy-Item -Path .\git-protonmail -Destination .\protonmail
           Copy-Item -Path .\git-protonmail -Destination .\protonmail_lite
           cd outlook
-          pyinstaller git-credential-outlook --exclude-module PyQt6 --icon=NONE --contents-directory gco-resources
+          pyinstaller git-credential-outlook --exclude-module PyQt6 --exclude-module PySide6 --icon=NONE --contents-directory gco-resources
           cd ..
           cd gmail
-          pyinstaller git-credential-gmail --exclude-module PyQt6 --icon=NONE --contents-directory gcg-resources
+          pyinstaller git-credential-gmail --exclude-module PyQt6 --exclude-module PySide6 --icon=NONE --contents-directory gcg-resources
           cd ..
           cd yahoo
-          pyinstaller git-credential-yahoo --exclude-module PyQt6 --icon=NONE --contents-directory gcy-resources
+          pyinstaller git-credential-yahoo --exclude-module PyQt6 --exclude-module PySide6 --icon=NONE --contents-directory gcy-resources
           cd ..
           cd aol
-          pyinstaller git-credential-aol --exclude-module PyQt6 --icon=NONE --contents-directory gca-resources
+          pyinstaller git-credential-aol --exclude-module PyQt6 --exclude-module PySide6 --icon=NONE --contents-directory gca-resources
           cd ..
           cd msgraph
-          pyinstaller git-msgraph --exclude-module PyQt6 --icon=NONE --contents-directory gcm-resources
+          pyinstaller git-msgraph --exclude-module PyQt6 --exclude-module PySide6 --icon=NONE --contents-directory gcm-resources
           cd ..
 
           pip install bcrypt cryptography keyring PGPy13 requests requests-toolbelt typing-extensions
