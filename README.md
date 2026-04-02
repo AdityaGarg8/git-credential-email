@@ -145,9 +145,10 @@ If not configured, it will use Thunderbird's `client_id` and `client_secret` by 
 The helpers include the client credentials of the following popular email clients:
 
 - Thunderbird
+- K-9 Mail
+- FairEmail
 - GNOME Evolution (only available for Gmail, Outlook and Yahoo)
 - GNOME Online Accounts (only available for Gmail and Outlook)
-- FairEmail
 
 In order to set the client credentials of your choice, run (taking `git credential-gmail` as an example):
 

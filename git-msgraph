@@ -54,8 +54,16 @@ import time
 import urllib.parse
 
 # https://github.com/mozilla/releases-comm-central/blob/master/mailnews/base/src/OAuth2Providers.sys.mjs
-ClientId_Thunderbird = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
-Redirect_URI_Thunderbird = "https://localhost"
+ClientId_Thunderbird_Desktop = "9e5f94bc-e8a4-4e73-b8be-63364c29d753"
+Redirect_URI_Thunderbird_Desktop = "https://localhost"
+
+# https://github.com/thunderbird/thunderbird-android/blob/main/app-thunderbird/src/release/kotlin/net/thunderbird/android/auth/TbOAuthConfigurationFactory.kt
+ClientId_Thunderbird_Android = "e6f8716e-299d-4ed9-bbf3-453f192f44e5"
+Redirect_URI_Thunderbird_Android = "https://login.live.com/oauth20_desktop.srf"
+
+# https://github.com/thunderbird/thunderbird-android/blob/main/app-k9mail/src/release/kotlin/app/k9mail/auth/K9OAuthConfigurationFactory.kt
+ClientId_K9_Mail = "e647013a-ada4-4114-b419-e43d250f99c5"
+Redirect_URI_K9_Mail = "msauth://com.fsck.k9/Dx8yUsuhyU3dYYba1aA16Wxu5eM%3D"
 
 # https://gitlab.gnome.org/GNOME/evolution-data-server/-/commit/7554d3b95124486ac98d9a5052e069e46242a216
 ClientId_Evolution = "cc6e0693-0e26-4220-8322-9d363e308fc6"
@@ -267,8 +275,8 @@ ClientId = load_client_id()
 Redirect_URI = load_redirect_uri()
 
 if ClientId is None:
-	ClientId = ClientId_Thunderbird
-	Redirect_URI = Redirect_URI_Thunderbird
+	ClientId = ClientId_Thunderbird_Desktop
+	Redirect_URI = Redirect_URI_Thunderbird_Desktop
 
 elif Redirect_URI is None:
 	Redirect_URI = 'https://login.microsoftonline.com/common/oauth2/nativeclient'
@@ -276,22 +284,28 @@ elif Redirect_URI is None:
 if "--set-client" in sys.argv:
 	print("What client details do you want to use?\n")
 	print("1. Thunderbird")
-	print("2. GNOME Evolution")
-	print("3. GNOME Online Accounts")
-	print("4. FairEmail")
-	print("5. Use your own custom client details")
+	print("2. K-9 Mail")
+	print("3. FairEmail")
+	print("4. GNOME Evolution")
+	print("5. GNOME Online Accounts")
+	print("6. Use your own custom client details")
 	answer = input("\nType the number of your choice and press enter: ")
 
 	if answer == "1":
-		ClientId = ClientId_Thunderbird
-		Redirect_URI = Redirect_URI_Thunderbird
+		print("\nChoose any Thunderbird variant:\n")
+		print("1. Thunderbird Desktop")
+		print("2. Thunderbird Mobile")
+		answer_alt = input("\nType the number of your choice and press enter: ")
+		if answer_alt == "1":
+			ClientId = ClientId_Thunderbird_Desktop
+			Redirect_URI = Redirect_URI_Thunderbird_Desktop
+		elif answer_alt == "2":
+			ClientId = ClientId_Thunderbird_Android
+			Redirect_URI = Redirect_URI_Thunderbird_Android
 	elif answer == "2":
-		ClientId = ClientId_Evolution
-		Redirect_URI = Redirect_URI_Evolution
+		ClientId = ClientId_K9_Mail
+		Redirect_URI = Redirect_URI_K9_Mail
 	elif answer == "3":
-		ClientId = ClientId_Gnome
-		Redirect_URI = Redirect_URI_Gnome
-	elif answer == "4":
 		print("\nThis client provides multiple client IDs. Choose any one:\n")
 		print("1. Default")
 		print("2. Alternative 1")
@@ -306,7 +320,13 @@ if "--set-client" in sys.argv:
 		elif answer_alt == "3":
 			ClientId = ClientId_FairEmail_3
 			Redirect_URI = Redirect_URI_FairEmail_3
+	elif answer == "4":
+		ClientId = ClientId_Evolution
+		Redirect_URI = Redirect_URI_Evolution
 	elif answer == "5":
+		ClientId = ClientId_Gnome
+		Redirect_URI = Redirect_URI_Gnome
+	elif answer == "6":
 		ClientId = input("\nEnter the Client ID: ")
 		Redirect_URI = input("Enter the Redirect URI: ")
 	else:
