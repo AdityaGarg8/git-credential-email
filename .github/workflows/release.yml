@@ -720,6 +720,5 @@ jobs:
             ${{ github.workspace }}/*.zip
           tag_name: "v${{ github.event.inputs.version }}"
           draft: false
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
