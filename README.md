@@ -136,7 +136,7 @@ For `git-protonmail`, two Windows packages are available: 1. `git-protonmail_win
 
 ## Setting up OAuth 2.0 client credentials
 
-**You can skip this section if you are using Proton Mail**
+**You can skip this section if you are using Proton Mail.**
 
 In order to use OAuth2.0, you need to provide an OAuth 2.0 `client_id` and a `client_secret` (secret not needed in Outlook) to allow the helper to authenticate with email servers on your behalf.
 
