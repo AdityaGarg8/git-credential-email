@@ -13,7 +13,7 @@ jobs:
         run: wget https://raw.githubusercontent.com/AdityaGarg8/t2-ubuntu-repo/refs/heads/main/KEY.gpg
 
       - name: Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             ${{ github.workspace }}/KEY.gpg
@@ -24,7 +24,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             ${{ github.workspace }}/KEY.gpg
